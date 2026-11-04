@@ -7,6 +7,7 @@ using Invy.Client.Core.Shell;
 using Invy.Client.UI;
 using Invy.Client.UI.Views;
 using Invy.Desktop.Hotkeys;
+using Invy.Desktop.Updates;
 using Invy.Desktop.Views;
 
 namespace Invy.Desktop.Hosting;
@@ -15,8 +16,11 @@ namespace Invy.Desktop.Hosting;
 /// Desktop-хост: главное окно сворачивается в трей, быстрый поиск по глобальной горячей клавише
 /// и по клику на иконку, повторный запуск приложения активирует уже работающий экземпляр.
 /// </summary>
-internal sealed class DesktopHost(SingleInstance instance, DesktopArguments startup) : IAppHost, IDisposable
+internal sealed class DesktopHost(SingleInstance instance, DesktopArguments startup, Uri serverUrl) : IAppHost, IDisposable
 {
+    private readonly DesktopUpdateService _updates = new(serverUrl);
+    private NativeMenuItem? _updateItem;
+
     public const string QuickSearchHotKey = "Ctrl+Alt+I";
     public const string QuickAddHotKey = "Ctrl+Alt+N";
 
@@ -46,7 +50,11 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
 
         // Закрытие окна не завершает приложение: оно остаётся в трее до «Выход».
         lifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        lifetime.Exit += (_, _) => Dispose();
+        lifetime.Exit += (_, _) =>
+        {
+            _updates.ApplyOnExit();   // скачанное, но не установленное обновление ставится после выхода
+            Dispose();
+        };
 
         _trayIcon = CreateTrayIcon();
         app.SetValue(TrayIcon.IconsProperty, new TrayIcons { _trayIcon });
@@ -56,6 +64,11 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         instance.StartListening();
 
         Handle(startup, fromSecondInstance: false);
+
+        if (_updates.IsInstalled)
+        {
+            DispatcherTimer.RunOnce(() => _ = CheckForUpdatesAsync(), TimeSpan.FromSeconds(30));
+        }
     }
 
     public void ShowMainWindow()
@@ -152,12 +165,53 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         menu.Items.Add(new NativeMenuItem("Открыть Invy") { Command = new RelayCommand(ShowMainWindow) });
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(new NativeMenuItem("Сервер: нет подключения") { IsEnabled = false });
+        _updateItem = new NativeMenuItem("Проверить обновления") { Command = new AsyncRelayCommand(CheckForUpdatesAsync) };
+        menu.Items.Add(_updateItem);
         menu.Items.Add(new NativeMenuItemSeparator());
         menu.Items.Add(new NativeMenuItem("Выход") { Command = new RelayCommand(Exit) });
 
-        var tray = new TrayIcon { Icon = AppIcon, ToolTipText = "Invy", Menu = menu };
+        var tray = new TrayIcon { Icon = AppIcon, ToolTipText = $"Invy {_updates.CurrentVersion}", Menu = menu };
         tray.Clicked += (_, _) => ShowQuickSearch();
         return tray;
+    }
+
+    /// <summary>
+    /// Первое нажатие — проверить и скачать; если обновление уже скачано — установить и перезапустить.
+    /// Ошибки сети не мешают работе: пункт меню показывает статус и позволяет повторить.
+    /// </summary>
+    private async Task CheckForUpdatesAsync()
+    {
+        var item = _updateItem!;
+        if (!_updates.IsInstalled)
+        {
+            item.Header = "Обновления — только в установленной версии";
+            item.IsEnabled = false;
+            return;
+        }
+
+        if (_updates.PendingVersion is not null)
+        {
+            _updates.ApplyAndRestart();
+            return;
+        }
+
+        item.Header = "Проверка обновлений…";
+        item.IsEnabled = false;
+        try
+        {
+            var version = await _updates.CheckAndDownloadAsync();
+            item.Header = version is null ? "Обновлений нет — проверить снова" : $"Установить {version} и перезапустить";
+        }
+#pragma warning disable CA1031 // любая ошибка проверки обновлений не должна ронять приложение
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            item.Header = "Сервер обновлений недоступен — повторить";
+        }
+        finally
+        {
+            item.IsEnabled = true;
+        }
     }
 
     private void RegisterHotKeys()

@@ -1,4 +1,5 @@
 using Invy.Api.Hosting;
+using Invy.Api.Updates;
 using Invy.Application;
 using Invy.Contracts;
 using Invy.Contracts.Server;
@@ -25,6 +26,7 @@ builder.Services.AddInvyApplication().AddInvyInfrastructure();
 var app = builder.Build();
 
 app.UseExceptionHandler();
+app.UseUpdateFeed(app.Services.GetRequiredService<ServerIdentity>().DataPath);
 app.MapHealthChecks(ApiRoutes.Health);
 app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
         identity.ServerId,

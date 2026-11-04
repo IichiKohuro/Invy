@@ -1,6 +1,7 @@
 using Avalonia;
 using Invy.Client.UI;
 using Invy.Desktop.Hosting;
+using Velopack;
 
 namespace Invy.Desktop;
 
@@ -11,6 +12,9 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Первым делом: Velopack обрабатывает установку/удаление/обновление и в этих случаях сам завершает процесс.
+        VelopackApp.Build().Run();
+
         using var instance = SingleInstance.TryAcquire(AppId);
         if (instance is null)
         {
@@ -19,7 +23,7 @@ internal static class Program
             return 0;
         }
 
-        using var host = new DesktopHost(instance, DesktopArguments.Parse(args));
+        using var host = new DesktopHost(instance, DesktopArguments.Parse(args), ServerUrl());
         return Configure(AppBuilder.Configure(() => new App(host))).StartWithClassicDesktopLifetime(args);
     }
 
@@ -31,4 +35,10 @@ internal static class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+
+    // Фаза 0: адрес сервера — из переменной окружения. С фазы 2 — из настроек подключения и автообнаружения.
+    private static Uri ServerUrl() =>
+        Uri.TryCreate(Environment.GetEnvironmentVariable("INVY_SERVER"), UriKind.Absolute, out var url)
+            ? url
+            : new Uri($"http://localhost:{Invy.Contracts.ApiRoutes.DefaultHttpPort}/");
 }
