@@ -1,0 +1,20 @@
+{
+  "solution": {
+    "path": "Invy.slnx",
+    "projects": [
+      "src/Invy.Api/Invy.Api.csproj",
+      "src/Invy.Application/Invy.Application.csproj",
+      "src/Invy.Client.Core/Invy.Client.Core.csproj",
+      "src/Invy.Client.UI/Invy.Client.UI.csproj",
+      "src/Invy.Contracts/Invy.Contracts.csproj",
+      "src/Invy.Desktop/Invy.Desktop.csproj",
+      "src/Invy.Domain/Invy.Domain.csproj",
+      "src/Invy.Infrastructure/Invy.Infrastructure.csproj",
+      "tests/Invy.Api.Tests/Invy.Api.Tests.csproj",
+      "tests/Invy.Application.Tests/Invy.Application.Tests.csproj",
+      "tests/Invy.Client.Tests/Invy.Client.Tests.csproj",
+      "tests/Invy.Domain.Tests/Invy.Domain.Tests.csproj",
+      "tests/Invy.Infrastructure.Tests/Invy.Infrastructure.Tests.csproj"
+    ]
+  }
+}

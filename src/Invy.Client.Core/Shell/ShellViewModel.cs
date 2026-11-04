@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Invy.Client.Core.Pages;
+using Invy.Client.Core.Updates;
 
 namespace Invy.Client.Core.Shell;
 
@@ -8,11 +9,11 @@ public sealed partial class ShellViewModel : ObservableObject
 {
     private readonly Dictionary<string, PageViewModel> _pages = [];
 
-    public ShellViewModel(IThemeService themeService)
+    public ShellViewModel(IThemeService themeService, IAppUpdater? updater = null, string? serverAddress = null)
     {
         ArgumentNullException.ThrowIfNull(themeService);
 
-        _pages["settings"] = new SettingsPageViewModel(themeService);
+        _pages["settings"] = new SettingsPageViewModel(themeService, updater, serverAddress);
         SelectedItem = MenuItems[0];
     }
 

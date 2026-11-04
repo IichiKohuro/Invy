@@ -25,7 +25,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        Shell = new ShellViewModel(new ThemeService(this));
+        Shell = new ShellViewModel(new ThemeService(this), _host?.Updater, _host?.DefaultServerAddress);
 
         if (_host is not null)
         {

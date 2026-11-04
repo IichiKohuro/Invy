@@ -43,6 +43,8 @@ public sealed class UpdateFeedTests : IClassFixture<UpdateFeedTests.Factory>
     [InlineData("/updates/win/releases.win.json", "application/json", "no-cache")]
     [InlineData("/updates/win/Invy.Desktop-0.2.0-delta.nupkg", "application/octet-stream", "public, max-age=31536000, immutable")]
     [InlineData("/updates/win/Invy.Desktop-win-Setup.exe", "application/vnd.microsoft.portable-executable", "no-cache")]
+    [InlineData("/updates/android/latest.json", "application/json", "no-cache")]
+    [InlineData("/updates/android/invy-0.2.0.apk", "application/vnd.android.package-archive", "public, max-age=31536000, immutable")]
     public async Task Serves_files_with_content_type_and_cache_policy(string path, string contentType, string cacheControl)
     {
         using var client = _factory.CreateClient();
@@ -80,6 +82,10 @@ public sealed class UpdateFeedTests : IClassFixture<UpdateFeedTests.Factory>
                 {"Assets":[{{Asset("Full", full)}},{{Asset("Delta", delta)}}]}
                 """);
             File.WriteAllText(Path.Combine(DataPath, "server-id"), Guid.NewGuid().ToString());
+
+            var android = Directory.CreateDirectory(Path.Combine(DataPath, "releases", "android")).FullName;
+            File.WriteAllText(Path.Combine(android, "invy-0.2.0.apk"), "apk");
+            File.WriteAllText(Path.Combine(android, "latest.json"), """{"versionCode":200,"versionName":"0.2.0","apkFileName":"invy-0.2.0.apk","sha256":"00","size":3}""");
         }
 
         public string DataPath { get; } = Path.Combine(Path.GetTempPath(), "invy-tests", Guid.NewGuid().ToString("N"));

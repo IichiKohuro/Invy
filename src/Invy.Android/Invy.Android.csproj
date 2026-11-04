@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Хост Android: Avalonia.Android; обновления — установка APK, который раздаёт сервер Invy -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <RootNamespace>Invy.Android</RootNamespace>
+    <ApplicationId>com.iichikohuro.invy</ApplicationId>
+    <ApplicationTitle>Invy</ApplicationTitle>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+    <!-- Версия из Directory.Build.props: versionCode = major*10000 + minor*100 + patch -->
+    <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
+    <ApplicationVersion>$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($(VersionPrefix.Split('.')[0]), 10000)), $([MSBuild]::Multiply($(VersionPrefix.Split('.')[1]), 100)))), $(VersionPrefix.Split('.')[2])))</ApplicationVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Invy.Client.UI\Invy.Client.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+  </ItemGroup>
+</Project>

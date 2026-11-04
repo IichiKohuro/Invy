@@ -12,4 +12,8 @@
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Invy.Client.Tests" />
+  </ItemGroup>
 </Project>

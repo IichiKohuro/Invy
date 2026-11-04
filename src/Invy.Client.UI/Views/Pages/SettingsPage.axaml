@@ -7,11 +7,29 @@
   <ScrollViewer>
     <StackPanel Margin="24,4,24,24" Spacing="4" MaxWidth="960">
       <TextBlock Text="Оформление" FontWeight="SemiBold" Margin="0,8,0,8" />
-      <ui:FASettingsExpander Header="Тема" Description="Светлая, тёмная или как в Windows" IconSource="DarkTheme">
+      <ui:FASettingsExpander Header="Тема" Description="Светлая, тёмная или как в системе" IconSource="DarkTheme">
         <ui:FASettingsExpander.Footer>
           <ComboBox x:Name="ThemeSelector" ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}" MinWidth="180" />
         </ui:FASettingsExpander.Footer>
       </ui:FASettingsExpander>
+
+      <StackPanel Spacing="4" IsVisible="{Binding HasUpdater}">
+        <TextBlock Text="Подключение и обновления" FontWeight="SemiBold" Margin="0,16,0,8" />
+        <ui:FASettingsExpander Header="Сервер Invy" Description="Адрес в домашней сети, например 192.168.1.10" IconSource="Globe">
+          <ui:FASettingsExpander.Footer>
+            <TextBox Text="{Binding ServerAddress}" PlaceholderText="192.168.1.10:5470" MinWidth="220" />
+          </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="Обновления" Description="{Binding UpdateStatus}" IconSource="Download">
+          <ui:FASettingsExpander.Footer>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Проверить" Command="{Binding CheckForUpdatesCommand}" />
+              <Button Content="Установить" Classes="accent" Command="{Binding InstallUpdateCommand}"
+                      IsVisible="{Binding ReadyVersion, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+          </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
+      </StackPanel>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

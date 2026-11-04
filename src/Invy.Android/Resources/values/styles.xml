@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Тема окна до появления UI Avalonia: без ActionBar, следует системной тёмной/светлой теме -->
+  <style name="InvyTheme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+    <item name="android:windowActionBar">false</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:windowBackground">@color/invy_background</item>
+  </style>
+</resources>

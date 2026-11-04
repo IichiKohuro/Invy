@@ -4,6 +4,7 @@ using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using Invy.Client.Core.Shell;
+using Invy.Client.Core.Updates;
 using Invy.Client.UI;
 using Invy.Client.UI.Views;
 using Invy.Desktop.Hotkeys;
@@ -20,6 +21,10 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
 {
     private readonly DesktopUpdateService _updates = new(serverUrl);
     private NativeMenuItem? _updateItem;
+
+    public IAppUpdater Updater => _updates;
+
+    public string DefaultServerAddress => serverUrl.ToString();
 
     public const string QuickSearchHotKey = "Ctrl+Alt+I";
     public const string QuickAddHotKey = "Ctrl+Alt+N";
@@ -65,7 +70,7 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
 
         Handle(startup, fromSecondInstance: false);
 
-        if (_updates.IsInstalled)
+        if (_updates.IsSupported)
         {
             DispatcherTimer.RunOnce(() => _ = CheckForUpdatesAsync(), TimeSpan.FromSeconds(30));
         }
@@ -182,7 +187,7 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
     private async Task CheckForUpdatesAsync()
     {
         var item = _updateItem!;
-        if (!_updates.IsInstalled)
+        if (!_updates.IsSupported)
         {
             item.Header = "Обновления — только в установленной версии";
             item.IsEnabled = false;
@@ -191,7 +196,7 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
 
         if (_updates.PendingVersion is not null)
         {
-            _updates.ApplyAndRestart();
+            _updates.Install();
             return;
         }
 
@@ -199,7 +204,7 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         item.IsEnabled = false;
         try
         {
-            var version = await _updates.CheckAndDownloadAsync();
+            var version = await _updates.CheckAndDownloadAsync(serverUrl);
             item.Header = version is null ? "Обновлений нет — проверить снова" : $"Установить {version} и перезапустить";
         }
 #pragma warning disable CA1031 // любая ошибка проверки обновлений не должна ронять приложение

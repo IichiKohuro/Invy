@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Invy.Contracts.Server;
+using Invy.Contracts.Updates;
 
 namespace Invy.Contracts;
 
@@ -10,4 +11,5 @@ namespace Invy.Contracts;
 /// </summary>
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(ServerInfoDto))]
+[JsonSerializable(typeof(AndroidReleaseManifest))]
 public sealed partial class InvyJsonContext : JsonSerializerContext;

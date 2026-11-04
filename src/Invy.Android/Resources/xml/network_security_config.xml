@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 9+ по умолчанию запрещает HTTP. Сервер Invy в MVP работает по HTTP внутри домашней сети,
+  поэтому незашифрованный трафик разрешён. HTTPS с пиннингом сертификата — фаза 9 (см. PLAN.md, 6.9).
+-->
+<network-security-config>
+  <base-config cleartextTrafficPermitted="true">
+    <trust-anchors>
+      <certificates src="system" />
+    </trust-anchors>
+  </base-config>
+</network-security-config>
