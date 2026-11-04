@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Invy.Api/Invy.Api.csproj" />
+    <Project Path="src/Invy.Application/Invy.Application.csproj" />
+    <Project Path="src/Invy.Client.Core/Invy.Client.Core.csproj" />
+    <Project Path="src/Invy.Client.UI/Invy.Client.UI.csproj" />
+    <Project Path="src/Invy.Contracts/Invy.Contracts.csproj" />
+    <Project Path="src/Invy.Desktop/Invy.Desktop.csproj" />
+    <Project Path="src/Invy.Domain/Invy.Domain.csproj" />
+    <Project Path="src/Invy.Infrastructure/Invy.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Invy.Api.Tests/Invy.Api.Tests.csproj" />
+    <Project Path="tests/Invy.Application.Tests/Invy.Application.Tests.csproj" />
+    <Project Path="tests/Invy.Client.Tests/Invy.Client.Tests.csproj" />
+    <Project Path="tests/Invy.Domain.Tests/Invy.Domain.Tests.csproj" />
+    <Project Path="tests/Invy.Infrastructure.Tests/Invy.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

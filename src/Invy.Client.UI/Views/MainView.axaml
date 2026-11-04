@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Invy.Client.UI.Views.MainView">
+  <TextBlock Text="Invy" HorizontalAlignment="Center" VerticalAlignment="Center" />
+</UserControl>

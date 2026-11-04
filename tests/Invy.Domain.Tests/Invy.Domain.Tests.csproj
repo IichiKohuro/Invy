@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Invy.Domain\Invy.Domain.csproj" />
+  </ItemGroup>
+</Project>

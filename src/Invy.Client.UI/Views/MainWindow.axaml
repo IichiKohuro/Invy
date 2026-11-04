@@ -1,0 +1,10 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Invy.Client.UI.Views"
+        x:Class="Invy.Client.UI.Views.MainWindow"
+        Title="Invy"
+        Width="1100" Height="720"
+        MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+  <views:MainView />
+</Window>

@@ -1,0 +1,11 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             x:Class="Invy.Client.UI.App"
+             Name="Invy"
+             RequestedThemeVariant="Default">
+  <Application.Styles>
+    <!-- Стиль Windows 11: системная тема и системный цвет акцента -->
+    <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
+  </Application.Styles>
+</Application>
