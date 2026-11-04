@@ -140,7 +140,7 @@ public sealed class MediaApiTests : IClassFixture<InvyApiFactory>
             (byte)(orientation >> 8), (byte)orientation, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00,                          // следующего IFD нет
         ];
-        byte[] payload = [.."Exif"u8, 0x00, 0x00, .. tiff];
+        byte[] payload = [.. "Exif"u8, 0x00, 0x00, .. tiff];
         var length = payload.Length + 2;
         byte[] segment = [0xFF, 0xE1, (byte)(length >> 8), (byte)length, .. payload];
         return [.. jpeg[..2], .. segment, .. jpeg[2..]];
