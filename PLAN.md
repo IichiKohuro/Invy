@@ -3,7 +3,7 @@
 > Целевая архитектура, модель данных, UX и поэтапный план реализации Invy — гибкого приложения для домашней инвентаризации.
 > Описание для пользователя — в [README.md](README.md).
 
-**Статус:** фаза 0 выполнена, кроме ручной проверки на Windows и Android · **Версия плана:** 1.1 · **Дата:** 2026-11-04
+**Статус:** фазы 0–1 выполнены (для фазы 0 осталась ручная проверка на Windows и Android) · **Версия плана:** 1.2 · **Дата:** 2026-11-04
 
 ## Содержание
 
@@ -272,7 +272,7 @@ Items — вещи, контейнеры и места
   CoverMediaId   TEXT NULL    → Media
   IsDeleted      BOOL         корзина
   DeletedAt      INT NULL
-  DeletedParentId TEXT NULL   откуда удалена — для восстановления
+  DeletionId     TEXT NULL    общий id вещей одной операции удаления (ADR 0006)
   индексы: (ParentId, IsDeleted, NameNorm), (TypeId), (UpdatedAt)
 
 ItemValues — значения характеристик (типизированный EAV)
@@ -282,7 +282,7 @@ ItemValues — значения характеристик (типизирова
   Ordinal        INT          0; для множественного выбора — 0..N
   TextValue      TEXT NULL
   NumberValue    REAL NULL
-  DateValue      INT NULL
+  DateValue      TEXT NULL    «yyyy-MM-dd»
   BoolValue      INT NULL
   OptionId       TEXT NULL    → ValueListOptions
   RefItemId      TEXT NULL    → Items
@@ -440,6 +440,7 @@ SELECT Id, Name FROM path ORDER BY Lvl DESC;
 | GET | `/items/{id}` | Карточка: характеристики, теги, фото, путь, счётчики |
 | GET | `/items/{id}/children?sort=&skip=&take=` | Содержимое контейнера |
 | GET | `/tree?parentId=` | Узлы дерева (только контейнеры и места), ленивая загрузка |
+| GET | `/items/roots` | Места верхнего уровня |
 | GET | `/items/unsorted` | «Неразобранное» |
 | POST | `/items` | Создать вещь |
 | PUT | `/items/{id}` | Изменить (с `version`) |
@@ -470,6 +471,7 @@ SELECT Id, Name FROM path ORDER BY Lvl DESC;
 | POST / GET | `/pairing/requests`, `/pairing/requests/{id}` | Запрос сопряжения и ожидание решения |
 | POST | `/pairing/requests/{id}/approve\|deny` | Решение администратора |
 | GET / PATCH / DELETE | `/devices[/{id}]` | Устройства: роль, имя, отзыв |
+| GET | `/devices/me` | Кто я: устройство и роль текущего токена |
 | GET / PUT | `/settings/backup` | Настройки бэкапа |
 | GET / POST | `/backups`, `/backups/{id}/restore`, `/backups/{id}/download` | Копии: список, создать, восстановить, скачать |
 | GET | `/updates/{platform}/latest` | Последний релиз платформы |
@@ -917,17 +919,19 @@ flowchart LR
 
 ### Фаза 1. Ядро сервера — 10–12 дней
 
-- [ ] Domain: `Item`, `ItemType`, `FieldDefinition`, `ValueList`, `ValueListOption`, `ItemValue`, `Tag`, `Media`, `Device`, `AuditEntry`; правила дерева и валидации значений
-- [ ] Infrastructure: `InvyDbContext`, конфигурации, конвертеры (Guid, время), интерсепторы (PRAGMA и коллации, `Version`/`UpdatedAt`, аудит), первая миграция + SQL для FTS5
-- [ ] Dapper: фабрика подключений, `TypeHandler`'ы, запросы дерева, пути и счётчиков
-- [ ] Application: сервисы вещей, типов, справочников, тегов; перемещение с проверкой циклов; корзина
-- [ ] Api: Minimal API v1, ProblemDetails, OpenAPI + Scalar, `/health`, `/info`
-- [ ] SignalR: `Changed` после коммита, `seq`, `/sync/changes`
-- [ ] Аутентификация по токену устройства (+ режим «Доверенная сеть» для разработки)
-- [ ] Хостинг службой Windows, Serilog
-- [ ] Тесты: домен, интеграция с SQLite, API
+- [x] Domain: `Item`, `ItemType`, `FieldDefinition`, `ValueList`, `ValueListOption`, `ItemValue`, `Tag`, `MediaFile`, `Device`, `AuditEntry`; правила дерева, проверка и форматирование значений, шаблон авто-названия
+- [x] Infrastructure: `InvyDbContext`, конфигурации, конвертеры (время → Unix ms, JSON), версия/время/автор, номера вещей и история изменений при сохранении, первая миграция + SQL для FTS5 — [ADR 0006](docs/adr/0006-persistence-audit-sync.md)
+- [x] Dapper на соединении EF: `TypeHandler`'ы, путь, счётчики, содержимое, узлы дерева, потомки, проверка циклов, подсказки значений
+- [x] Application: сервисы вещей, типов, справочников, тегов, истории; перемещение с проверкой циклов; дублирование; корзина по операциям удаления
+- [x] Api: Minimal API v1, ProblemDetails (404/409/422), OpenAPI + Scalar, `/health`, `/info`
+- [x] SignalR: `Changed` после коммита, `seq`, `/sync/changes`; `PairingRequested` администраторам
+- [x] Аутентификация по токену устройства, сопряжение с кодом, роли, режим «Доверенная сеть» для разработки — [ADR 0007](docs/adr/0007-device-auth-pairing.md)
+- [x] Хостинг службой Windows, Serilog (файлы в `{DataPath}/logs`), миграции при старте с копией БД
+- [x] Тесты: домен, интеграция с SQLite, API (в т. ч. сопряжение и два SignalR-клиента) — 146 тестов
 
-**Готово, когда:** весь CRUD и перемещение работают через Scalar; два SignalR-клиента в тесте получают события.
+**Готово, когда:** весь CRUD и перемещение работают через Scalar; два SignalR-клиента в тесте получают события. ✅
+
+Перенесено: обновление `LastSeenAt` устройств, ответ `410` для отставших клиентов (появится вместе с очисткой истории), наполнение FTS5 (фаза 3), загрузка фото (фаза 2).
 
 ### Фаза 2. Desktop MVP — 12–15 дней
 
