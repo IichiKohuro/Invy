@@ -1,4 +1,5 @@
 using Invy.Application.Catalog;
+using Invy.Application.Devices;
 using Invy.Application.History;
 using Invy.Application.Items;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,15 @@ public static class DependencyInjection
         services.AddScoped<TagService>();
         services.AddScoped<ItemService>();
         services.AddScoped<HistoryService>();
+        services.AddSingleton<PairingStore>();
+        services.TryAddSingleton<IAdminNotifier, NullAdminNotifier>();
+        services.AddScoped<PairingService>();
+        services.AddScoped<DeviceService>();
         return services;
+    }
+
+    private sealed class NullAdminNotifier : IAdminNotifier
+    {
+        public Task PairingRequestedAsync(Contracts.Devices.PendingPairingDto request, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

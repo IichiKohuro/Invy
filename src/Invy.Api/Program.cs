@@ -1,8 +1,10 @@
 using Invy.Api.Endpoints;
 using Invy.Api.Hosting;
+using Invy.Api.Realtime;
 using Invy.Api.Updates;
 using Invy.Application;
 using Invy.Contracts;
+using Invy.Contracts.Devices;
 using Invy.Contracts.Server;
 using Invy.Infrastructure;
 using Invy.Infrastructure.Persistence;
@@ -29,6 +31,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.TypeInfoResolverChain.Insert(0, InvyJsonContext.Default));
 builder.Services.AddInvyAuth(builder.Configuration);
+builder.Services.AddPairingRateLimit();
+builder.Services.AddInvyRealtime();
 builder.Services.AddInvyApplication().AddInvyInfrastructure(dataPath);
 
 var app = builder.Build();
@@ -40,6 +44,7 @@ app.UseStatusCodePages();
 app.UseUpdateFeed(dataPath);   // релизы клиентов раздаются без авторизации — до UseAuthentication
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapHealthChecks(ApiRoutes.Health).AllowAnonymous();
 app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
@@ -52,6 +57,8 @@ app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
     .AllowAnonymous();
 app.MapCatalog();
 app.MapItems();
+app.MapDevices();
+app.MapHub<InventoryHub>(HubRoutes.Inventory);
 
 if (app.Environment.IsDevelopment())
 {

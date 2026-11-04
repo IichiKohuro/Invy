@@ -1,8 +1,7 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using Invy.Application.Abstractions;
+using Invy.Application.Devices;
 using Invy.Domain.Devices;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
@@ -37,16 +36,6 @@ public static class Policies
 internal static class InvyClaims
 {
     public const string DeviceId = "invy:device";
-}
-
-/// <summary>Токен устройства: 256 бит случайных данных; на сервере хранится только SHA-256.</summary>
-internal static class DeviceTokens
-{
-    public static string Create() => Base64Url(RandomNumberGenerator.GetBytes(32));
-
-    public static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
-
-    private static string Base64Url(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
 /// <summary>
