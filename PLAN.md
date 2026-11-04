@@ -3,7 +3,7 @@
 > Целевая архитектура, модель данных, UX и поэтапный план реализации Invy — гибкого приложения для домашней инвентаризации.
 > Описание для пользователя — в [README.md](README.md).
 
-**Статус:** проектирование · **Версия плана:** 1.0 · **Дата:** 2026-11-04
+**Статус:** фаза 0 выполнена, кроме ручной проверки на Windows и Android · **Версия плана:** 1.1 · **Дата:** 2026-11-04
 
 ## Содержание
 
@@ -119,7 +119,7 @@ flowchart LR
 
 | # | Вопрос | Решение | Почему | Альтернативы |
 |---|--------|---------|--------|--------------|
-| 1 | UI Desktop + Android | **Avalonia UI 11.3+** (или 12, если стабилен на старте) + **FluentAvalonia** | Один XAML-код для Windows и Android; тема в стиле Windows 11 (Mica, NavigationView, ContentDialog, InfoBar, SettingsExpander); встроенный `TrayIcon`; Dark/Light; готовая интеграция с Velopack | .NET MAUI — слабее стиль Win11, нет трея; WinUI 3 + MAUI — лучший нативный вид, но два UI-кода; Uno Platform — сложнее сборка |
+| 1 | UI Desktop + Android | **Avalonia UI 12.1** + **FluentAvalonia 3.1** (подтверждено спайком, ADR 0002) | Один XAML-код для Windows и Android; тема в стиле Windows 11 (Mica, NavigationView, ContentDialog, InfoBar, SettingsExpander); встроенный `TrayIcon`; Dark/Light; готовая интеграция с Velopack | .NET MAUI — слабее стиль Win11, нет трея; WinUI 3 + MAUI — лучший нативный вид, но два UI-кода; Uno Platform — сложнее сборка |
 | 2 | Доступ к данным | **EF Core** — схема, миграции, запись, аудит. **Dapper** — сложное чтение: поиск, дерево, счётчики, лента изменений | EF удобен для модели и транзакций, Dapper — для динамического SQL с FTS5 и рекурсивными CTE | Только EF — неудобен динамический SQL; только Dapper — ручные миграции |
 | 3 | Хранилище | **SQLite** (WAL) + медиафайлы на диске | Ноль администрирования, один файл, простой бэкап | PostgreSQL — избыточно для дома |
 | 4 | Пользовательские поля | **Типизированный EAV**: `ItemValues` с колонками Text / Number / Date / Bool / Option / Ref | Индексы и сравнения по типу (`длина>100`), сортировка, ссылочная целостность справочников | JSON-колонка — проще запись, хуже фильтры, сортировка и целостность |
@@ -139,7 +139,9 @@ flowchart LR
 ```text
 Invy/
 ├── Invy.slnx
+├── Invy.NoAndroid.slnf            # всё, кроме Android, — для машин без Android SDK
 ├── global.json                    # фиксирует .NET SDK 10.0.x
+├── dotnet-tools.json              # локальные инструменты: vpk (Velopack)
 ├── Directory.Build.props          # общие настройки: nullable, анализаторы, версия, TreatWarningsAsErrors
 ├── Directory.Packages.props       # центральное управление версиями NuGet-пакетов
 ├── .editorconfig
@@ -159,8 +161,9 @@ Invy/
 │   ├── Invy.Infrastructure.Tests/ # настоящий SQLite: миграции, CTE, FTS5, кириллица
 │   ├── Invy.Api.Tests/            # WebApplicationFactory + SignalR
 │   └── Invy.Client.Tests/         # ViewModels, Avalonia.Headless
-├── tools/                         # release.ps1, install-server.ps1, генератор тестовых данных
-└── docs/                          # ADR, макеты, скриншоты, чек-лист релиза
+├── tools/                         # pack-desktop.ps1, pack-android.ps1; позже release.ps1, install-server.ps1
+├── docs/                          # ADR, результаты спайков, скриншоты, чек-листы
+└── .github/workflows/ci.yml
 ```
 
 **Зависимости проектов** (стрелка — «зависит от»):
@@ -900,16 +903,17 @@ flowchart LR
 
 ### Фаза 0. Фундамент и спайки — 3–5 дней
 
-- [ ] Репозиторий: `Invy.slnx`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `.editorconfig`, каркас `src/` и `tests/`
-- [ ] CI: сборка и тесты на PR
-- [ ] Спайк: Avalonia + FluentAvalonia — окно с Mica, NavigationView, переключение тем; тот же View на Android в Release-сборке с триммингом
-- [ ] Спайк: трей + глобальная горячая клавиша + один экземпляр
-- [ ] Спайк: Velopack с HTTP-фидом, который раздаёт локальный ASP.NET Core
-- [ ] Спайк: самообновление APK через `PackageInstaller`, в т. ч. без подтверждения на Android 12+
-- [ ] Спайк: FTS5 + кириллица (регистр, «ё», префиксы), коллация естественной сортировки
-- [ ] ADR по итогам в `docs/adr/`
+- [x] Репозиторий: `Invy.slnx`, `Invy.NoAndroid.slnf`, `global.json`, `Directory.Build.props`, `Directory.Packages.props`, `.editorconfig`, каркас `src/` и `tests/`
+- [x] CI: сборка, тесты, форматирование, APK, пакет Desktop — `.github/workflows/ci.yml` (на push в `dev`/`main` и на PR)
+- [x] Спайк: Avalonia 12 + FluentAvalonia 3 — окно с Mica, NavigationView, переключение тем, headless-скриншоты — [ADR 0002](docs/adr/0002-ui-avalonia-fluentavalonia.md)
+- [x] Спайк: трей + глобальная горячая клавиша + один экземпляр — [ADR 0003](docs/adr/0003-desktop-tray-hotkeys-single-instance.md)
+- [x] Спайк: Velopack с HTTP-фидом, который раздаёт сервер Invy; `tools/pack-desktop.ps1` — [ADR 0004](docs/adr/0004-desktop-updates-velopack.md)
+- [x] Спайк: самообновление APK через `PackageInstaller`, `tools/pack-android.ps1` — [ADR 0005](docs/adr/0005-android-host-and-apk-updates.md)
+- [x] Спайк: FTS5 + кириллица (регистр, «ё», префиксы), коллация естественной сортировки — [ADR 0001](docs/adr/0001-sqlite-fts5-cyrillic.md)
+- [x] ADR по итогам в `docs/adr/`
+- [ ] Ручная проверка на Windows и Android-устройстве — [чек-лист](docs/spikes/phase-0/checklist.md): Mica, трей и `RegisterHotKey`, установка и обновление Desktop, сборка APK, обновление на телефоне
 
-**Готово, когда:** решения подтверждены или заменены (при проблемах Avalonia на Android — запасной вариант: Android-клиент на .NET MAUI поверх того же `Invy.Client.Core`).
+**Готово, когда:** решения подтверждены или заменены (при проблемах Avalonia на Android — запасной вариант: Android-клиент на .NET MAUI поверх того же `Invy.Client.Core`). Всё, что проверяется без Windows и телефона, подтверждено тестами (98 тестов); остался ручной чек-лист.
 
 ### Фаза 1. Ядро сервера — 10–12 дней
 

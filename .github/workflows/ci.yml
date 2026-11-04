@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  AVALONIA_TELEMETRY_OPTOUT: "1"
+
+jobs:
+  build-test:
+    name: Сборка и тесты (без Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Invy.NoAndroid.slnf
+
+      - name: Format check
+        run: dotnet format Invy.NoAndroid.slnf --verify-no-changes --no-restore
+
+      - name: Build
+        run: dotnet build Invy.NoAndroid.slnf --no-restore -c Release
+
+      - name: Test
+        run: dotnet test Invy.NoAndroid.slnf --no-build -c Release
+
+      - name: UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-screenshots
+          path: tests/Invy.Client.Tests/bin/Release/net10.0/screenshots/
+          if-no-files-found: ignore
+
+  android:
+    name: Android (Release, APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android workload
+        run: dotnet workload install android
+
+      - name: Install Android SDK dependencies
+        run: >
+          dotnet build src/Invy.Android -t:InstallAndroidDependencies -f net10.0-android
+          -p:AndroidSdkDirectory="$ANDROID_HOME" -p:AcceptAndroidSDKLicenses=True
+
+      - name: Build APK (Release, trimmed)
+        run: dotnet build src/Invy.Android -c Release -p:AndroidSdkDirectory="$ANDROID_HOME"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: invy-android-apk
+          path: src/Invy.Android/bin/Release/net10.0-android/*-Signed.apk
+          if-no-files-found: error
+
+  desktop-package:
+    name: Пакет Desktop (Velopack)
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: build-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Pack
+        shell: pwsh
+        run: ./tools/pack-desktop.ps1 -Version "0.1.${{ github.run_number }}" -ReleasesDir artifacts/releases/win
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: invy-desktop-win
+          path: artifacts/releases/win/
+          if-no-files-found: error

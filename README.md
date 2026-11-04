@@ -8,7 +8,7 @@
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Android-0078D4)
 ![Status](https://img.shields.io/badge/status-проектирование-orange)
 
-> **Статус:** проект на стадии проектирования. README описывает целевое поведение версии 1.0; план работ, архитектура и модель данных — в [PLAN.md](PLAN.md).
+> **Статус:** в разработке. Выполнена фаза 0: каркас решения, CI и проверочные прототипы ключевых технологий ([ADR](docs/adr/README.md)). README описывает целевое поведение версии 1.0; план работ, архитектура и модель данных — в [PLAN.md](PLAN.md).
 
 Invy — это «Проводник для вещей». Места, шкафы, коробки и пакеты работают как папки, вещи — как файлы. Кабели, переходники, инструменты, документы — всё заносится за секунды и находится ещё быстрее. Один сервер в домашней сети, приложение для Windows (живёт в трее) и для Android; изменение на одном устройстве сразу видно на всех.
 
@@ -242,7 +242,8 @@ flowchart LR
 - .NET 10 SDK (версия зафиксирована в `global.json`)
 - Workload Android: `dotnet workload install android` (+ JDK 17 и Android SDK — ставятся вместе с IDE)
 - IDE: Visual Studio 2026, JetBrains Rider или VS Code + C# Dev Kit; для XAML — расширение Avalonia
-- Для выпуска релизов: Velopack CLI — `dotnet tool install -g vpk`
+- Velopack CLI (`vpk`) — локальный инструмент репозитория, ставится командой `dotnet tool restore`
+- Необязательно: `AVALONIA_TELEMETRY_OPTOUT=1` отключает сбор статистики сборки Avalonia
 
 ### Запуск
 
@@ -254,13 +255,19 @@ git clone https://github.com/IichiKohuro/Invy.git
 cd Invy && dotnet restore
 ```
 
-Сервер (API — `http://localhost:5470`, документация API — `http://localhost:5470/scalar`). В `Development` включён режим `TrustedLan`, сопряжение не требуется:
+Без Android SDK собирайте фильтр решения — всё, кроме Android-проекта:
+
+```bash
+dotnet build Invy.NoAndroid.slnf
+```
+
+Сервер (API — `http://localhost:5470`, документация API — `http://localhost:5470/scalar`, данные dev-сервера — в `.data/server`):
 
 ```bash
 dotnet run --project src/Invy.Api
 ```
 
-Desktop:
+Desktop (сервер по умолчанию — `http://localhost:5470`; другой адрес — переменная `INVY_SERVER` или поле в настройках):
 
 ```bash
 dotnet run --project src/Invy.Desktop
@@ -272,10 +279,10 @@ Android (эмулятор или телефон с отладкой по USB):
 dotnet build src/Invy.Android -t:Run -f net10.0-android
 ```
 
-Тесты:
+Тесты (UI-тесты сохраняют скриншоты в `tests/Invy.Client.Tests/bin/…/screenshots`):
 
 ```bash
-dotnet test
+dotnet test Invy.NoAndroid.slnf
 ```
 
 Новая миграция БД:
@@ -286,13 +293,17 @@ dotnet ef migrations add <Name> --project src/Invy.Infrastructure --startup-proj
 
 ### Выпуск версии
 
-Одна команда собирает всё, прогоняет тесты, упаковывает Desktop (Velopack) и Android (подписанный APK) и публикует в `releases\` сервера — клиенты получат обновление автоматически:
+Сейчас Desktop и Android упаковываются отдельными скриптами — результат сразу попадает в каталог релизов сервера (по умолчанию `%ProgramData%\Invy\releases\…`), и клиенты находят обновление сами:
 
 ```powershell
-./tools/release.ps1 -Version 1.4.0
+./tools/pack-desktop.ps1 -Version 1.4.0
 ```
 
-Пароли keystore передаются через переменные окружения (`INVY_KEYSTORE_PASS`). Keystore храните в надёжном месте: без него обновить уже установленные APK невозможно.
+```powershell
+./tools/pack-android.ps1 -Version 1.4.0 -KeyStore D:\keys\invy.keystore
+```
+
+В фазе 8 появится единый `tools/release.ps1`: тесты + оба пакета одной командой. Пароль keystore передаётся через переменную окружения `INVY_KEYSTORE_PASS`. Keystore храните в надёжном месте: без него обновить уже установленные APK невозможно.
 
 ### Структура репозитория
 
