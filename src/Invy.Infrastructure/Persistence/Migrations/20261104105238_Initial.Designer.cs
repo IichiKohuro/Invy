@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Invy.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(InvyDbContext))]
-    [Migration("20261104103755_Initial")]
+    [Migration("20261104105238_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -73,7 +73,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Devices.Device", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AppVersion")
@@ -116,7 +115,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Files.MediaFile", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Caption")
@@ -173,7 +171,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Items.Item", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Color")
@@ -335,7 +332,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Lists.ValueList", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("AllowAddFromForm")
@@ -383,7 +379,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Lists.ValueListOption", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Color")
@@ -420,7 +415,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Tags.Tag", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Color")
@@ -467,7 +461,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Types.FieldDefinition", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("DataType")
@@ -523,7 +516,6 @@ namespace Invy.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Invy.Domain.Types.ItemType", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("BaseTypeId")

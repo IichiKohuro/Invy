@@ -1,3 +1,4 @@
+using Invy.Api.Endpoints;
 using Invy.Api.Hosting;
 using Invy.Api.Updates;
 using Invy.Application;
@@ -18,13 +19,16 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 var serverOptions = builder.Configuration.GetSection(InvyServerOptions.SectionName).Get<InvyServerOptions>() ?? new InvyServerOptions();
 var dataPath = serverOptions.ResolveDataPath(builder.Environment.ContentRootPath);
 
+builder.Logging.AddInvyFileLogging(dataPath);
 builder.Services.AddWindowsService(o => o.ServiceName = "InvyServer");
 builder.Services.Configure<InvyServerOptions>(builder.Configuration.GetSection(InvyServerOptions.SectionName));
 builder.Services.AddSingleton<ServerIdentity>();
 builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.TypeInfoResolverChain.Insert(0, InvyJsonContext.Default));
+builder.Services.AddInvyAuth(builder.Configuration);
 builder.Services.AddInvyApplication().AddInvyInfrastructure(dataPath);
 
 var app = builder.Build();
@@ -32,20 +36,27 @@ var app = builder.Build();
 await DatabaseMigrator.MigrateAsync(app.Services, Path.Combine(dataPath, "backups"));
 
 app.UseExceptionHandler();
-app.UseUpdateFeed(dataPath);
-app.MapHealthChecks(ApiRoutes.Health);
+app.UseStatusCodePages();
+app.UseUpdateFeed(dataPath);   // релизы клиентов раздаются без авторизации — до UseAuthentication
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapHealthChecks(ApiRoutes.Health).AllowAnonymous();
 app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
         identity.ServerId,
         identity.Name,
         ServerIdentity.Version,
         ApiRoutes.ApiVersion,
         MinClientVersion: "0.1.0"))
-    .WithName("GetServerInfo");
+    .WithName("GetServerInfo")
+    .AllowAnonymous();
+app.MapCatalog();
+app.MapItems();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference().AllowAnonymous();
 }
 
 await app.RunAsync();

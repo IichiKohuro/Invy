@@ -11,12 +11,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace Invy.Infrastructure.Persistence;
 
 // Схема — см. PLAN.md, раздел 5.2. Guid хранятся как TEXT, время — INTEGER (Unix ms).
+// Ключи Guid — ValueGeneratedNever: иначе EF принимает новую сущность с заданным ключом,
+// добавленную в коллекцию (поле типа, вариант справочника), за существующую и делает UPDATE вместо INSERT.
 
 internal sealed class ItemConfiguration : IEntityTypeConfiguration<Item>
 {
     public void Configure(EntityTypeBuilder<Item> b)
     {
         b.ToTable("Items");
+        b.Property(i => i.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(i => i.Version).IsConcurrencyToken();
         b.Property(i => i.Name).IsRequired().HasMaxLength(300);
         b.Property(i => i.NameNorm).IsRequired().HasMaxLength(300);
@@ -73,6 +76,7 @@ internal sealed class ItemTypeConfiguration : IEntityTypeConfiguration<ItemType>
     public void Configure(EntityTypeBuilder<ItemType> b)
     {
         b.ToTable("ItemTypes");
+        b.Property(t => t.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(t => t.Version).IsConcurrencyToken();
         b.Property(t => t.Name).IsRequired().HasMaxLength(100);
         b.Property(t => t.NameNorm).IsRequired().HasMaxLength(100);
@@ -89,6 +93,7 @@ internal sealed class FieldDefinitionConfiguration : IEntityTypeConfiguration<Fi
     public void Configure(EntityTypeBuilder<FieldDefinition> b)
     {
         b.ToTable("FieldDefinitions");
+        b.Property(f => f.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(f => f.Name).IsRequired().HasMaxLength(100);
         b.Property(f => f.Unit).HasMaxLength(20);
         b.Property(f => f.GroupName).HasMaxLength(100);
@@ -105,6 +110,7 @@ internal sealed class ValueListConfiguration : IEntityTypeConfiguration<ValueLis
     public void Configure(EntityTypeBuilder<ValueList> b)
     {
         b.ToTable("ValueLists");
+        b.Property(l => l.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(l => l.Version).IsConcurrencyToken();
         b.Property(l => l.Name).IsRequired().HasMaxLength(100);
         b.Property(l => l.NameNorm).IsRequired().HasMaxLength(100);
@@ -118,6 +124,7 @@ internal sealed class ValueListOptionConfiguration : IEntityTypeConfiguration<Va
     public void Configure(EntityTypeBuilder<ValueListOption> b)
     {
         b.ToTable("ValueListOptions");
+        b.Property(o => o.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(o => o.Value).IsRequired().HasMaxLength(200);
         b.Property(o => o.ValueNorm).IsRequired().HasMaxLength(200);
         b.Property(o => o.Color).HasMaxLength(9);
@@ -130,6 +137,7 @@ internal sealed class TagConfiguration : IEntityTypeConfiguration<Tag>
     public void Configure(EntityTypeBuilder<Tag> b)
     {
         b.ToTable("Tags");
+        b.Property(t => t.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(t => t.Version).IsConcurrencyToken();
         b.Property(t => t.Name).IsRequired().HasMaxLength(100);
         b.Property(t => t.NameNorm).IsRequired().HasMaxLength(100);
@@ -143,6 +151,7 @@ internal sealed class MediaFileConfiguration : IEntityTypeConfiguration<MediaFil
     public void Configure(EntityTypeBuilder<MediaFile> b)
     {
         b.ToTable("Media");
+        b.Property(m => m.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(m => m.Sha256).IsRequired().HasMaxLength(64);
         b.Property(m => m.ContentType).IsRequired().HasMaxLength(100);
         b.Property(m => m.FileName).IsRequired().HasMaxLength(260);
@@ -157,6 +166,7 @@ internal sealed class DeviceConfiguration : IEntityTypeConfiguration<Device>
     public void Configure(EntityTypeBuilder<Device> b)
     {
         b.ToTable("Devices");
+        b.Property(d => d.Id).ValueGeneratedNever();   // Guid v7 задаёт приложение (и клиенты), не БД
         b.Property(d => d.Name).IsRequired().HasMaxLength(100);
         b.Property(d => d.TokenHash).IsRequired().HasMaxLength(64);
         b.Property(d => d.AppVersion).HasMaxLength(50);
