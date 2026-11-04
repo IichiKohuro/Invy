@@ -68,3 +68,7 @@ dotnet_diagnostic.CA1303.severity = none         # локализация чер
 dotnet_diagnostic.CA1707.severity = none         # подчёркивания в именах тестов
 dotnet_diagnostic.CA2007.severity = none
 dotnet_diagnostic.CA1515.severity = none
+
+# Миграции EF Core генерируются инструментом — анализаторы их не проверяют
+[src/Invy.Infrastructure/Persistence/Migrations/**.cs]
+generated_code = true

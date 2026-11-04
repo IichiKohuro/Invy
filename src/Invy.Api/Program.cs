@@ -4,6 +4,7 @@ using Invy.Application;
 using Invy.Contracts;
 using Invy.Contracts.Server;
 using Invy.Infrastructure;
+using Invy.Infrastructure.Persistence;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Scalar.AspNetCore;
 
@@ -14,6 +15,9 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default,
 });
 
+var serverOptions = builder.Configuration.GetSection(InvyServerOptions.SectionName).Get<InvyServerOptions>() ?? new InvyServerOptions();
+var dataPath = serverOptions.ResolveDataPath(builder.Environment.ContentRootPath);
+
 builder.Services.AddWindowsService(o => o.ServiceName = "InvyServer");
 builder.Services.Configure<InvyServerOptions>(builder.Configuration.GetSection(InvyServerOptions.SectionName));
 builder.Services.AddSingleton<ServerIdentity>();
@@ -21,12 +25,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddHealthChecks();
 builder.Services.AddOpenApi();
 builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.TypeInfoResolverChain.Insert(0, InvyJsonContext.Default));
-builder.Services.AddInvyApplication().AddInvyInfrastructure();
+builder.Services.AddInvyApplication().AddInvyInfrastructure(dataPath);
 
 var app = builder.Build();
 
+await DatabaseMigrator.MigrateAsync(app.Services, Path.Combine(dataPath, "backups"));
+
 app.UseExceptionHandler();
-app.UseUpdateFeed(app.Services.GetRequiredService<ServerIdentity>().DataPath);
+app.UseUpdateFeed(dataPath);
 app.MapHealthChecks(ApiRoutes.Health);
 app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
         identity.ServerId,
