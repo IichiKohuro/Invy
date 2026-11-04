@@ -58,6 +58,7 @@ app.MapGet(ApiRoutes.Info, (ServerIdentity identity) => new ServerInfoDto(
 app.MapCatalog();
 app.MapItems();
 app.MapDevices();
+app.MapMedia();
 app.MapHub<InventoryHub>(HubRoutes.Inventory);
 
 if (app.Environment.IsDevelopment())

@@ -492,12 +492,14 @@ public sealed class ItemService(IInventoryDbContext db, IUnitOfWork unitOfWork, 
 
         var path = await queries.GetPathAsync(item.Id, cancellationToken);
         var counts = await queries.GetCountsAsync(item.Id, cancellationToken);
+        var photos = await db.Media.AsNoTracking().Where(m => m.ItemId == item.Id).OrderBy(m => m.SortOrder).ToListAsync(cancellationToken);
 
         return new ItemDetailsDto(
             item.Id, item.Number, item.TypeId, type.Name, (Contracts.Catalog.TypeRole)type.Role, item.ParentId, item.Name, item.IsNameAuto,
             item.Description, item.Quantity, item.Unit, item.MinQuantity,
             CatalogMapping.ToIcon(item.IconKind ?? type.IconKind, item.IconValue ?? type.IconValue), item.Color ?? type.Color, item.CoverMediaId,
             values, item.Tags.Select(t => t.TagId).ToList(),
+            photos.Select(Media.MediaService.ToDto).ToList(),
             path.Select(p => new PathSegmentDto(p.Id, p.Name)).ToList(),
             new ItemCountsDto(counts.Direct, counts.Total),
             item.IsDeleted, item.Version, item.CreatedAt, item.UpdatedAt);

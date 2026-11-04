@@ -28,6 +28,9 @@
     <PackageVersion Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Dapper" Version="2.1.89" />
+    <!-- Та же версия, что тянет Avalonia 12.1 -->
+    <PackageVersion Include="SkiaSharp" Version="3.119.4" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.4" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.18.7" />
   </ItemGroup>
 

@@ -2,6 +2,8 @@ using Invy.Application.Catalog;
 using Invy.Application.Devices;
 using Invy.Application.History;
 using Invy.Application.Items;
+using Invy.Application.Media;
+using Invy.Application.Setup;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,6 +20,8 @@ public static class DependencyInjection
         services.AddScoped<TagService>();
         services.AddScoped<ItemService>();
         services.AddScoped<HistoryService>();
+        services.AddScoped<MediaService>();
+        services.AddScoped<StarterKitService>();
         services.AddSingleton<PairingStore>();
         services.TryAddSingleton<IAdminNotifier, NullAdminNotifier>();
         services.AddScoped<PairingService>();

@@ -21,6 +21,15 @@ public sealed record FieldValueDto(
 
 public sealed record PathSegmentDto(Guid Id, string Name);
 
+/// <summary>Фото вещи. Файл: <c>GET /api/v1/media/{Id}?size=Thumb|Preview|Original</c>.</summary>
+public sealed record MediaDto(Guid Id, string FileName, string ContentType, long SizeBytes, int? Width, int? Height, int SortOrder, DateTimeOffset CreatedAt);
+
+/// <summary>Обложка вещи: фото для списков и плиток; <c>null</c> — без обложки.</summary>
+public sealed record SetCoverRequest(Guid? MediaId);
+
+/// <summary>Результат добавления стартового набора типов и справочников.</summary>
+public sealed record StarterKitResult(int TypesCreated, int ListsCreated);
+
 public sealed record ItemCountsDto(int Direct, int Total);
 
 /// <summary>Строка списка: содержимое контейнера, результаты.</summary>
@@ -60,6 +69,7 @@ public sealed record ItemDetailsDto(
     Guid? CoverMediaId,
     IReadOnlyList<FieldValueDto> Values,
     IReadOnlyList<Guid> TagIds,
+    IReadOnlyList<MediaDto> Photos,
     IReadOnlyList<PathSegmentDto> Path,
     ItemCountsDto Counts,
     bool IsDeleted,

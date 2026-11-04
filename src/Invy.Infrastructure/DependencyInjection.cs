@@ -1,4 +1,5 @@
 using Invy.Application.Abstractions;
+using Invy.Infrastructure.Media;
 using Invy.Infrastructure.Persistence;
 using Invy.Infrastructure.Queries;
 using Microsoft.Data.Sqlite;
@@ -34,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryDbContext>(sp => sp.GetRequiredService<InvyDbContext>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IItemQueries, ItemQueries>();
+        services.AddSingleton<IMediaStore>(new MediaStore(Path.Combine(dataPath, "media")));
         return services;
     }
 }
