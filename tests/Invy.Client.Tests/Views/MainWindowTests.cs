@@ -25,7 +25,7 @@ public class MainWindowTests
     [InlineData(ThemeMode.Dark, "settings")]
     public void Renders_page_in_theme(ThemeMode theme, string page)
     {
-        var themes = new ThemeService(Application.Current!);
+        var themes = new ThemeService(Avalonia.Application.Current!);
         themes.Apply(theme);
         var shell = new ShellViewModel(themes);
         shell.Navigate(page);

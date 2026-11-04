@@ -120,6 +120,13 @@ public class FieldValueTests
         TitleTemplate.Render("{Разъём 1} → {Разъём 2}, {длина} см", values).ShouldBe("Type-A → Type-C, 100 см");
         TitleTemplate.Render("{Разъём 1} → {Разъём 2}", new Dictionary<string, string?> { ["Разъём 1"] = "Type-A" }).ShouldBe("Type-A");
         TitleTemplate.Render("{Разъём 1} → {Разъём 2}", new Dictionary<string, string?>()).ShouldBeNull();
+
+        // Пустое значение выпадает вместе с единицей, лишние разделители схлопываются.
+        const string cable = "{Разъём 1} → {Разъём 2}, {Длина} см";
+        TitleTemplate.Render(cable, new Dictionary<string, string?> { ["Разъём 1"] = "Type-A", ["Разъём 2"] = "Type-C" }).ShouldBe("Type-A → Type-C");
+        TitleTemplate.Render(cable, new Dictionary<string, string?> { ["Разъём 1"] = "Type-A", ["Длина"] = "100" }).ShouldBe("Type-A, 100 см");
+        TitleTemplate.Render(cable, new Dictionary<string, string?> { ["Длина"] = "100" }).ShouldBe("100 см");
+        TitleTemplate.Render(cable, new Dictionary<string, string?> { ["Длина"] = " " }).ShouldBeNull();
         TitleTemplate.FieldNames("{Разъём 1} → { Длина }").ShouldBe(["Разъём 1", "Длина"]);
     }
 

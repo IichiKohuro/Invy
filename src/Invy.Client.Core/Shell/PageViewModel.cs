@@ -6,6 +6,9 @@ namespace Invy.Client.Core.Shell;
 public abstract class PageViewModel : ObservableObject
 {
     public abstract string Title { get; }
+
+    /// <summary>Страница показана: загрузить данные (первый раз) или обновить.</summary>
+    public virtual Task ActivateAsync() => Task.CompletedTask;
 }
 
 /// <summary>Заглушка для разделов, которые появятся в следующих фазах.</summary>

@@ -50,13 +50,14 @@ public static class FieldValueFormatter
 
 /// <summary>
 /// Шаблон авто-названия вещи: «{Разъём 1} → {Разъём 2}, {Длина} см».
-/// Имена полей сравниваются без учёта регистра и «ё»; пустые значения выпадают.
+/// Имена полей сравниваются без учёта регистра и «ё». Пустое значение выпадает вместе со своим «хвостом»
+/// до ближайшего разделителя («{Длина} см» → ничего), повторяющиеся разделители схлопываются.
 /// </summary>
 public static partial class TitleTemplate
 {
     private const string TrimChars = " ,;:–—-→/|";
 
-    /// <returns>Название или <c>null</c>, если по шаблону ничего не получилось.</returns>
+    /// <returns>Название или <c>null</c>, если ни одно поле из шаблона не заполнено.</returns>
     public static string? Render(string? template, IReadOnlyDictionary<string, string?> valuesByFieldName)
     {
         if (string.IsNullOrWhiteSpace(template))
@@ -64,19 +65,49 @@ public static partial class TitleTemplate
             return null;
         }
 
-        var byNorm = valuesByFieldName.ToDictionary(kv => TextNormalizer.Normalize(kv.Key), kv => kv.Value);
-        var rendered = Placeholder().Replace(template, m => byNorm.GetValueOrDefault(TextNormalizer.Normalize(m.Groups[1].Value)) ?? string.Empty);
-        var collapsed = Spaces().Replace(rendered, " ").Trim(TrimChars.ToCharArray());
+        var byNorm = new Dictionary<string, string?>();
+        foreach (var (name, value) in valuesByFieldName)
+        {
+            byNorm[TextNormalizer.Normalize(name)] = value;
+        }
 
+        var filled = false;
+        var rendered = Placeholder().Replace(template, m =>
+        {
+            var value = byNorm.GetValueOrDefault(TextNormalizer.Normalize(m.Groups[1].Value))?.Trim();
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            filled = true;
+            return value + m.Groups[2].Value;
+        });
+
+        if (!filled)
+        {
+            return null;
+        }
+
+        rendered = SeparatorRun().Replace(rendered, m => m.Groups[1].Captures[^1].Value);
+        var collapsed = Spaces().Replace(rendered, " ").Trim(TrimChars.ToCharArray());
         return collapsed.Any(char.IsLetterOrDigit) ? collapsed : null;
     }
 
     /// <summary>Имена полей, упомянутые в шаблоне.</summary>
     public static IReadOnlyList<string> FieldNames(string? template) =>
-        string.IsNullOrEmpty(template) ? [] : Placeholder().Matches(template).Select(m => m.Groups[1].Value.Trim()).ToList();
+        string.IsNullOrEmpty(template) ? [] : FieldName().Matches(template).Select(m => m.Groups[1].Value.Trim()).ToList();
+
+    /// <summary>Поле и его «хвост» до разделителя: «{Длина} см».</summary>
+    [GeneratedRegex(@"\{([^{}]+)\}([^{},;|/→–—-]*)")]
+    private static partial Regex Placeholder();
 
     [GeneratedRegex(@"\{([^{}]+)\}")]
-    private static partial Regex Placeholder();
+    private static partial Regex FieldName();
+
+    /// <summary>Два и больше разделителя подряд (после выпавших значений): « → , » → «, ».</summary>
+    [GeneratedRegex(@"(\s*[,;|/→–—-]\s*){2,}")]
+    private static partial Regex SeparatorRun();
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex Spaces();

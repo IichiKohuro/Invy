@@ -4,6 +4,8 @@
              xmlns:shell="using:Invy.Client.Core.Shell"
              xmlns:pages="using:Invy.Client.Core.Pages"
              xmlns:views="using:Invy.Client.UI.Views.Pages"
+             xmlns:explorer="using:Invy.Client.Core.Explorer"
+             xmlns:explorerViews="using:Invy.Client.UI.Views.Explorer"
              x:Class="Invy.Client.UI.App"
              Name="Invy"
              RequestedThemeVariant="Default">
@@ -17,8 +19,8 @@
     <DataTemplate DataType="pages:HomePageViewModel">
       <views:HomePage />
     </DataTemplate>
-    <DataTemplate DataType="pages:PlacesPageViewModel">
-      <views:PlacesPage />
+    <DataTemplate DataType="explorer:ExplorerViewModel">
+      <explorerViews:ExplorerPage />
     </DataTemplate>
     <DataTemplate DataType="pages:SettingsPageViewModel">
       <views:SettingsPage />

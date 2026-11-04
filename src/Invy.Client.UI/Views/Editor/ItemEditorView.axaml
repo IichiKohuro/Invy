@@ -1,0 +1,232 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:editor="using:Invy.Client.Core.Editor"
+             xmlns:catalog="using:Invy.Contracts.Catalog"
+             xmlns:local="using:Invy.Client.UI.Views.Editor"
+             xmlns:controls="using:Invy.Client.UI.Controls"
+             x:Class="Invy.Client.UI.Views.Editor.ItemEditorView"
+             x:DataType="editor:ItemEditorViewModel">
+  <UserControl.Resources>
+    <!-- Поле формы по типу данных характеристики -->
+    <local:FieldTemplateSelector x:Key="FieldTemplates">
+      <DataTemplate x:Key="Text" x:DataType="editor:FieldEditorViewModel">
+        <TextBox Text="{Binding Text}" PlaceholderText="{Binding Placeholder}" />
+      </DataTemplate>
+      <DataTemplate x:Key="Url" x:DataType="editor:FieldEditorViewModel">
+        <TextBox Text="{Binding Text}" PlaceholderText="https://…" />
+      </DataTemplate>
+      <DataTemplate x:Key="LongText" x:DataType="editor:FieldEditorViewModel">
+        <TextBox Text="{Binding Text}" PlaceholderText="{Binding Placeholder}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" />
+      </DataTemplate>
+      <DataTemplate x:Key="Integer" x:DataType="editor:FieldEditorViewModel">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <NumericUpDown Value="{Binding Number}" FormatString="{Binding NumberFormat}" Increment="{Binding Increment}"
+                         Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" MinWidth="160" PlaceholderText="—" />
+          <TextBlock Text="{Binding Unit}" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+      </DataTemplate>
+      <DataTemplate x:Key="Decimal" x:DataType="editor:FieldEditorViewModel">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <NumericUpDown Value="{Binding Number}" FormatString="{Binding NumberFormat}" Increment="{Binding Increment}"
+                         Minimum="{Binding Minimum}" Maximum="{Binding Maximum}" MinWidth="160" PlaceholderText="—" />
+          <TextBlock Text="{Binding Unit}" VerticalAlignment="Center" Opacity="0.7" />
+        </StackPanel>
+      </DataTemplate>
+      <DataTemplate x:Key="Boolean" x:DataType="editor:FieldEditorViewModel">
+        <ToggleSwitch IsChecked="{Binding Bool}" OnContent="Да" OffContent="Нет" />
+      </DataTemplate>
+      <DataTemplate x:Key="Date" x:DataType="editor:FieldEditorViewModel">
+        <CalendarDatePicker SelectedDate="{Binding Date}" PlaceholderText="дд.мм.гггг" MinWidth="160" />
+      </DataTemplate>
+      <DataTemplate x:Key="Choice" x:DataType="editor:FieldEditorViewModel">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption}" MinWidth="200"
+                    PlaceholderText="Не выбрано" DisplayMemberBinding="{Binding Value, x:DataType=catalog:ValueListOptionDto}" />
+          <Button Classes="add-option" IsVisible="{Binding AllowAddOption}" ToolTip.Tip="Добавить вариант в справочник">
+            <ui:FASymbolIcon Symbol="Add" FontSize="14" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBox Text="{Binding NewOptionText}" PlaceholderText="Новый вариант" MinWidth="180" />
+                  <Button Content="Добавить" Classes="accent" Command="{Binding AddOptionCommand}" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
+      </DataTemplate>
+      <DataTemplate x:Key="MultiChoice" x:DataType="editor:FieldEditorViewModel">
+        <WrapPanel>
+          <ItemsControl ItemsSource="{Binding OptionToggles}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="editor:OptionToggle">
+                <ToggleButton Classes="chip" Content="{Binding Option.Value}" IsChecked="{Binding IsSelected}" Margin="0,0,6,6" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Classes="add-option" IsVisible="{Binding AllowAddOption}" ToolTip.Tip="Добавить вариант в справочник" Margin="0,0,6,6">
+            <ui:FASymbolIcon Symbol="Add" FontSize="14" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <TextBox Text="{Binding NewOptionText}" PlaceholderText="Новый вариант" MinWidth="180" />
+                  <Button Content="Добавить" Classes="accent" Command="{Binding AddOptionCommand}" />
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+        </WrapPanel>
+      </DataTemplate>
+      <DataTemplate x:Key="ItemRef" x:DataType="editor:FieldEditorViewModel">
+        <TextBlock Text="{Binding ItemRefName, FallbackValue='—', TargetNullValue='— (выбор вещи появится в следующих версиях)'}" Opacity="0.7" />
+      </DataTemplate>
+    </local:FieldTemplateSelector>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Opacity" Value="0.85" />
+    </Style>
+    <Style Selector="TextBlock.error">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,8,0,0" />
+    </Style>
+    <Style Selector="ToggleButton.chip">
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="12,4" />
+      <Setter Property="MinHeight" Value="28" />
+    </Style>
+    <Style Selector="Button.add-option">
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer>
+    <StackPanel Margin="24,16,24,24" Spacing="14">
+      <ui:FAInfoBar Severity="Success" IsOpen="{Binding SavedMessage, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Message="{Binding SavedMessage}" IsClosable="False" />
+      <ui:FAInfoBar Severity="Error" IsOpen="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Title="Не сохранено" Message="{Binding Error}" IsClosable="False" />
+
+      <!-- Тип -->
+      <StackPanel>
+        <TextBlock Classes="caption" Text="Тип" />
+        <ComboBox x:Name="TypeSelector" ItemsSource="{Binding Types}" SelectedItem="{Binding SelectedType}"
+                  HorizontalAlignment="Stretch" MaxDropDownHeight="420">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="catalog:ItemTypeDto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <controls:ItemIcon Icon="{Binding Icon}" Role="{Binding Role}" Tint="{Binding Color}" Size="16" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+      </StackPanel>
+
+      <!-- Название -->
+      <StackPanel>
+        <TextBlock Classes="caption" Text="Название" />
+        <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="{Binding NamePlaceholder}" MaxLength="300" />
+        <TextBlock Classes="hint" Text="{Binding NameHint}" IsVisible="{Binding NameHint, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <TextBlock Classes="error" Text="{Binding NameError}" IsVisible="{Binding NameError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </StackPanel>
+
+      <!-- Где лежит -->
+      <StackPanel>
+        <TextBlock Classes="caption" Text="Где лежит" />
+        <Button Command="{Binding ChangeLocationCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <ui:FASymbolIcon Symbol="MapPin" FontSize="16" Margin="0,0,10,0" />
+            <TextBlock Grid.Column="1" Text="{Binding LocationText}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="Изменить…" Opacity="0.6" VerticalAlignment="Center" Margin="12,0,0,0" />
+          </Grid>
+        </Button>
+        <TextBlock Classes="error" Text="{Binding LocationError}" IsVisible="{Binding LocationError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </StackPanel>
+
+      <!-- Количество -->
+      <Grid ColumnDefinitions="*,12,*">
+        <StackPanel>
+          <TextBlock Classes="caption" Text="Количество" />
+          <NumericUpDown Value="{Binding Quantity}" Minimum="0" Increment="1" FormatString="0.###" />
+          <TextBlock Classes="error" Text="{Binding QuantityError}" IsVisible="{Binding QuantityError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+        <StackPanel Grid.Column="2">
+          <TextBlock Classes="caption" Text="Единица" />
+          <TextBox Text="{Binding Unit}" PlaceholderText="{Binding UnitPlaceholder}" MaxLength="20" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Характеристики типа -->
+      <TextBlock Classes="section" Text="Характеристики" IsVisible="{Binding HasFields}" />
+      <ItemsControl ItemsSource="{Binding Fields}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Spacing="14" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="editor:FieldEditorViewModel">
+            <StackPanel>
+              <TextBlock Classes="caption" Text="{Binding Label}" />
+              <ContentControl Content="{Binding}" ContentTemplate="{StaticResource FieldTemplates}" HorizontalContentAlignment="Stretch" />
+              <TextBlock Classes="error" Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Теги -->
+      <TextBlock Classes="section" Text="Теги" />
+      <WrapPanel>
+        <ItemsControl ItemsSource="{Binding Tags}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="editor:TagToggle">
+              <ToggleButton Classes="chip" IsChecked="{Binding IsSelected}" Margin="0,0,6,6">
+                <TextBlock Text="{Binding Tag.Name, StringFormat='#{0}'}" />
+              </ToggleButton>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBox Text="{Binding NewTagText}" PlaceholderText="+ новый тег" MinWidth="140" Margin="0,0,6,6">
+          <TextBox.KeyBindings>
+            <KeyBinding Gesture="Enter" Command="{Binding AddTagCommand}" />
+          </TextBox.KeyBindings>
+        </TextBox>
+      </WrapPanel>
+
+      <!-- Описание -->
+      <StackPanel>
+        <TextBlock Classes="caption" Text="Описание" />
+        <TextBox Text="{Binding Description}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="72" PlaceholderText="Заметки, состояние, откуда взялась…" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

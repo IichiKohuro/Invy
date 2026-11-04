@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:editor="using:Invy.Client.Core.Editor"
+        xmlns:local="using:Invy.Client.UI.Views.Editor"
+        x:Class="Invy.Client.UI.Views.Editor.ItemEditorWindow"
+        x:DataType="editor:ItemEditorViewModel"
+        Title="{Binding Title}"
+        Width="600" Height="760" MinWidth="420" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SaveCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+Enter" Command="{Binding SaveAndAddAnotherCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+  </Window.KeyBindings>
+
+  <DockPanel>
+    <!-- Кнопки как у диалогов Windows 11: основная — акцентная и первая -->
+    <Border DockPanel.Dock="Bottom" Padding="24,16"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button x:Name="SaveButton" Classes="accent" Content="Сохранить" Command="{Binding SaveCommand}" MinWidth="120" ToolTip.Tip="Ctrl+Enter" />
+          <Button Content="Сохранить и добавить ещё" Command="{Binding SaveAndAddAnotherCommand}"
+                  IsVisible="{Binding CanSaveAndAddAnother}" ToolTip.Tip="Ctrl+Shift+Enter" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Отмена" Command="{Binding CancelCommand}" MinWidth="100" />
+      </Grid>
+    </Border>
+
+    <local:ItemEditorView />
+  </DockPanel>
+</Window>

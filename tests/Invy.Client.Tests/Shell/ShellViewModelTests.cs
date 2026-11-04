@@ -21,7 +21,7 @@ public class ShellViewModelTests
         var home = shell.CurrentPage;
 
         shell.Navigate("places");
-        shell.CurrentPage.ShouldBeOfType<PlacesPageViewModel>();
+        shell.CurrentPage.ShouldBeOfType<PlaceholderPageViewModel>().Description.ShouldBe("Нет подключения к серверу Invy.");
 
         shell.Navigate("home");
         shell.CurrentPage.ShouldBeSameAs(home);

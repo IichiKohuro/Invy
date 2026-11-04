@@ -1,10 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Invy.Desktop\Invy.Desktop.csproj" />
+    <!-- Настоящий сервер в памяти: экраны «Проводника» и редактора с живыми данными -->
+    <ProjectReference Include="..\..\src\Invy.Api\Invy.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Headless.XUnit" />
     <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
   </ItemGroup>
 </Project>

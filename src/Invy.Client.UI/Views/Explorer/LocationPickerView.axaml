@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:explorer="using:Invy.Client.Core.Explorer"
+             xmlns:controls="using:Invy.Client.UI.Controls"
+             x:Class="Invy.Client.UI.Views.Explorer.LocationPickerView"
+             x:DataType="explorer:LocationPickerViewModel"
+             Width="440" Height="420">
+  <DockPanel>
+    <RadioButton DockPanel.Dock="Top" GroupName="location" IsChecked="{Binding IsNoPlaceSelected}" Margin="4,0,0,8">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Без места" />
+        <TextBlock Text="Место — на верхний уровень, вещь — в «Неразобранное»" FontSize="12" Opacity="0.6" />
+      </StackPanel>
+    </RadioButton>
+    <Border CornerRadius="6" BorderThickness="1" Padding="4"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}">
+      <Panel>
+        <TreeView ItemsSource="{Binding Tree}" SelectedItem="{Binding SelectedNode}">
+          <TreeView.Styles>
+            <Style Selector="TreeViewItem" x:DataType="explorer:PlaceNodeViewModel">
+              <Setter Property="IsExpanded" Value="{Binding IsExpanded}" />
+            </Style>
+          </TreeView.Styles>
+          <TreeView.ItemTemplate>
+            <TreeDataTemplate x:DataType="explorer:PlaceNodeViewModel" ItemsSource="{Binding Children}">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <controls:ItemIcon Icon="{Binding Icon}" Role="{Binding Role}" Tint="{Binding Color}" Size="16" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+              </StackPanel>
+            </TreeDataTemplate>
+          </TreeView.ItemTemplate>
+        </TreeView>
+        <ui:FAProgressRing IsVisible="{Binding IsLoading}" IsIndeterminate="True" Width="32" Height="32" />
+      </Panel>
+    </Border>
+  </DockPanel>
+</UserControl>
