@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Invy.Client.Core.Api;
 using Invy.Client.Core.Catalog;
+using Invy.Client.Core.Photos;
 using Invy.Client.Core.Session;
 using Invy.Contracts;
 using Invy.Contracts.Catalog;
@@ -32,6 +33,7 @@ public sealed partial class ItemEditorViewModel : ObservableObject
             .ThenBy(t => t.SortOrder)
             .ThenBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase));
         Tags = new ObservableCollection<TagToggle>(session.Catalog.Tags.Select(t => new TagToggle(t)));
+        Photos = new PhotoStripViewModel(session);
     }
 
     /// <summary>Новая вещь в <paramref name="location"/> (<c>null</c> — «Неразобранное» или верхний уровень мест).</summary>
@@ -65,6 +67,19 @@ public sealed partial class ItemEditorViewModel : ObservableObject
 
     public ObservableCollection<TagToggle> Tags { get; }
 
+    /// <summary>Фото: у новой вещи загрузятся после сохранения, у существующей — сразу.</summary>
+    [ObservableProperty]
+    public partial PhotoStripViewModel Photos { get; private set; }
+
+    /// <summary>Иконка, которая будет видна: своя или типа.</summary>
+    public IconDto? EffectiveIcon => Icon ?? SelectedType?.Icon;
+
+    public string? EffectiveColor => Color ?? SelectedType?.Color;
+
+    public TypeRole EffectiveRole => SelectedType?.Role ?? TypeRole.Item;
+
+    public bool HasOwnLook => Icon is not null || Color is not null;
+
     [ObservableProperty]
     public partial ItemTypeDto? SelectedType { get; set; }
 
@@ -97,9 +112,11 @@ public sealed partial class ItemEditorViewModel : ObservableObject
     public partial string? LocationError { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EffectiveIcon), nameof(HasOwnLook))]
     public partial IconDto? Icon { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EffectiveColor), nameof(HasOwnLook))]
     public partial string? Color { get; set; }
 
     [ObservableProperty]
@@ -164,6 +181,12 @@ public sealed partial class ItemEditorViewModel : ObservableObject
                     var saved = _item is { } existing
                         ? await _session.Api.UpdateItemAsync(existing.Id, request)
                         : await _session.Api.CreateItemAsync(request);
+                    if (Photos.Photos.Any(p => p.IsPending))
+                    {
+                        await Photos.UploadPendingAsync(saved.Id);
+                        saved = await _session.Api.GetItemAsync(saved.Id);   // с фото и обложкой
+                    }
+
                     Remember(type, saved);
                     Result = saved;
                     return saved;
@@ -241,6 +264,33 @@ public sealed partial class ItemEditorViewModel : ObservableObject
     private void Cancel() => CloseRequested?.Invoke();
 
     [RelayCommand]
+    private void SetEmoji(string? emoji) => Icon = string.IsNullOrEmpty(emoji) ? null : new IconDto(IconKind.Emoji, emoji);
+
+    [RelayCommand]
+    private void SetSymbol(string? symbol) => Icon = string.IsNullOrEmpty(symbol) ? null : new IconDto(IconKind.Fluent, symbol);
+
+    [RelayCommand]
+    private void SetColor(string? color) => Color = string.IsNullOrEmpty(color) ? null : color;
+
+    /// <summary>Иконка и цвет — как у типа.</summary>
+    [RelayCommand]
+    private void ResetLook()
+    {
+        Icon = null;
+        Color = null;
+    }
+
+    /// <summary>Своя иконка из фото вещи (уже загруженного на сервер).</summary>
+    [RelayCommand]
+    private void UsePhotoAsIcon(PhotoViewModel? photo)
+    {
+        if (photo?.MediaId is { } mediaId)
+        {
+            Icon = new IconDto(IconKind.Custom, mediaId.ToString());
+        }
+    }
+
+    [RelayCommand]
     private async Task ChangeLocationAsync()
     {
         if (await _session.Dialogs.PickLocationAsync("Где лежит?", _session) is { } target)
@@ -305,6 +355,9 @@ public sealed partial class ItemEditorViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(HasFields));
+        OnPropertyChanged(nameof(EffectiveIcon));
+        OnPropertyChanged(nameof(EffectiveColor));
+        OnPropertyChanged(nameof(EffectiveRole));
         OnPropertyChanged(nameof(HasTemplate));
         OnPropertyChanged(nameof(NameHint));
         OnPropertyChanged(nameof(UnitPlaceholder));
@@ -337,6 +390,8 @@ public sealed partial class ItemEditorViewModel : ObservableObject
         // В карточке — действующие иконка и цвет (свои или типа); в редакторе — только свои.
         Icon = item.Icon == type?.Icon ? null : item.Icon;
         Color = item.Color == type?.Color ? null : item.Color;
+        Photos = new PhotoStripViewModel(_session, item.Id);
+        Photos.Load(item.Photos, item.CoverMediaId);
         _locationName = item.Path.Count > 0 ? string.Join(" › ", item.Path.Select(p => p.Name)) : null;
         ParentId = item.ParentId;
         foreach (var field in Fields)
@@ -373,6 +428,7 @@ public sealed partial class ItemEditorViewModel : ObservableObject
         Quantity = 1;
         Icon = null;
         Color = null;
+        Photos = new PhotoStripViewModel(_session);
         foreach (var field in Fields)
         {
             field.Load(InitialValue(field.Definition, _session.Catalog.List(field.Definition.ValueListId)));

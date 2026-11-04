@@ -141,6 +141,48 @@ public class ExplorerViewTests
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task Photos_show_as_thumbnails_card_strip_and_editor_look()
+    {
+        await using var backend = new TestBackend();
+        var (shell, window) = await OpenAsync(backend, ThemeMode.Light);
+        var data = await SampleData.CreateAsync(backend.Session!);
+        var api = backend.Session!.Api;
+        await api.UploadPhotosAsync(data.Box, [
+            ("box-front.png", new MemoryStream(SampleData.Photo(SkiaSharp.SKColors.SandyBrown, SkiaSharp.SKColors.SaddleBrown))),
+            ("box-inside.png", new MemoryStream(SampleData.Photo(SkiaSharp.SKColors.LightSteelBlue, SkiaSharp.SKColors.SteelBlue))),
+        ]);
+        await api.UploadPhotosAsync(data.Cable, [("cable.png", new MemoryStream(SampleData.Photo(SkiaSharp.SKColors.DimGray, SkiaSharp.SKColors.Black)))]);
+
+        var explorer = await PlacesAsync(shell);
+        await explorer.NavigateAsync(data.Attic);
+        explorer.SelectedItem = explorer.Items.Single(i => i.Id == data.Box);
+        await TestBackend.WaitUntilAsync(() => explorer.Details?.Id == data.Box && explorer.Items.Single(i => i.Id == data.Box).HasThumbnail);
+        await TestBackend.WaitUntilAsync(() => explorer.Details!.Photos.Photos.All(p => p.Thumbnail is not null));
+        Render();
+        explorer.Details!.Photos.Photos.Select(p => p.IsCover).ShouldBe([true, false]);
+        window.GetVisualDescendants().OfType<Image>().Count(i => i.IsEffectivelyVisible && i.Source is not null).ShouldBeGreaterThanOrEqualTo(3);
+        Save(window, "explorer-photos");
+
+        // Редактор коробки: лента фото и выбор иконки.
+        var editing = explorer.EditCommand.ExecuteAsync(explorer.SelectedItem);
+        await TestBackend.WaitUntilAsync(() => window.OwnedWindows.OfType<ItemEditorWindow>().Any());
+        var editorWindow = window.OwnedWindows.OfType<ItemEditorWindow>().Single();
+        var editor = (ItemEditorViewModel)editorWindow.DataContext!;
+        await TestBackend.WaitUntilAsync(() => editor.Photos.Photos.Count == 2 && editor.Photos.Photos.All(p => p.Thumbnail is not null));
+        var look = editorWindow.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "LookButton");
+        look.Flyout!.ShowAt(look);
+        Render();
+        Save(editorWindow, "editor-look");
+
+        editor.SetEmojiCommand.Execute("🧰");
+        look.Flyout.Hide();
+        await editor.SaveCommand.ExecuteAsync(null);
+        await editing.WaitAsync(TimeSpan.FromSeconds(10));
+        (await api.GetItemAsync(data.Box)).Icon!.Value.ShouldBe("🧰");
+        window.Close();
+    }
+
     private static async Task<(ShellViewModel Shell, MainWindow Window)> OpenAsync(TestBackend backend, ThemeMode theme)
     {
         var themes = new ThemeService(Avalonia.Application.Current!);

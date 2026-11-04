@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:photos="using:Invy.Client.Core.Photos"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             x:Class="Invy.Client.UI.Views.Photos.PhotoStripView"
+             x:DataType="photos:PhotoStripViewModel"
+             DragDrop.AllowDrop="True">
+  <UserControl.Styles>
+    <Style Selector="Border.photo">
+      <Setter Property="Width" Value="84" />
+      <Setter Property="Height" Value="84" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.photo.cover">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+    </Style>
+    <Style Selector="Border.drop-target">
+      <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border x:Name="DropArea" CornerRadius="8" Padding="0">
+    <WrapPanel>
+      <ItemsControl ItemsSource="{Binding Photos}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="photos:PhotoViewModel">
+            <Border Classes="photo" Classes.cover="{Binding IsCover}" ToolTip.Tip="{Binding FileName}" Tag="{Binding}">
+              <Border.ContextFlyout>
+                <MenuFlyout>
+                  <MenuItem Header="Открыть" Click="OnOpenClick" />
+                  <MenuItem Header="Сделать обложкой"
+                            Command="{Binding $parent[UserControl].((photos:PhotoStripViewModel)DataContext).SetCoverCommand}"
+                            CommandParameter="{Binding}" />
+                  <Separator />
+                  <MenuItem Header="Удалить"
+                            Command="{Binding $parent[UserControl].((photos:PhotoStripViewModel)DataContext).RemoveCommand}"
+                            CommandParameter="{Binding}" />
+                </MenuFlyout>
+              </Border.ContextFlyout>
+              <Panel>
+                <Image Source="{Binding Thumbnail, Converter={x:Static conv:BitmapConverters.Thumbnail}}" Stretch="UniformToFill" />
+                <Border IsVisible="{Binding IsCover}" Background="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="0,0,0,6"
+                        HorizontalAlignment="Right" VerticalAlignment="Top" Padding="4,2" ToolTip.Tip="Обложка">
+                  <ui:FASymbolIcon Symbol="Star" FontSize="11" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                </Border>
+                <Border IsVisible="{Binding IsPending}" Background="#80000000" VerticalAlignment="Bottom" Padding="4,1">
+                  <TextBlock Text="после сохранения" FontSize="10" Foreground="White" HorizontalAlignment="Center" />
+                </Border>
+              </Panel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Button Width="84" Height="84" Margin="0,0,6,6" Command="{Binding PickCommand}" IsVisible="{Binding CanEdit}"
+              ToolTip.Tip="Добавить фото: выбрать файлы, перетащить сюда или вставить из буфера (Ctrl+V)">
+        <Panel>
+          <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !IsBusy}">
+            <ui:FASymbolIcon Symbol="Camera" FontSize="20" />
+            <TextBlock Text="Фото" FontSize="12" HorizontalAlignment="Center" />
+          </StackPanel>
+          <ui:FAProgressRing IsVisible="{Binding IsBusy}" IsIndeterminate="True" Width="24" Height="24" />
+        </Panel>
+      </Button>
+    </WrapPanel>
+  </Border>
+</UserControl>

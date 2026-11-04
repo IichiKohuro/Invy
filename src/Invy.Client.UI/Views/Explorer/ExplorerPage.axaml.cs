@@ -5,11 +5,14 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using FluentAvalonia.UI.Controls;
 using Invy.Client.Core.Explorer;
+using Invy.Client.UI.Services;
 
 namespace Invy.Client.UI.Views.Explorer;
 
 /// <summary>
-/// «Проводник». Перетаскивание: вещи из списка — на контейнер в списке или на узел дерева.
+/// «Проводник». Перетаскивание: вещи из списка — на контейнер в списке или на узел дерева;
+/// файлы-картинки — на вещь, карточку или пустое место списка (фото текущего места).
+/// Ctrl+V: вставить вырезанное, а если ничего не вырезано — картинки из буфера как фото.
 /// Двойной щелчок или Enter — открыть контейнер или изменить вещь.
 /// </summary>
 public partial class ExplorerPage : UserControl
@@ -52,6 +55,8 @@ public partial class ExplorerPage : UserControl
         }
 
         AddDropHandlers(PlacesTree);
+        AddDropHandlers(CardPane);
+        KeyDown += OnKeyDown;
     }
 
     private ExplorerViewModel? ViewModel => DataContext as ExplorerViewModel;
@@ -115,32 +120,77 @@ public partial class ExplorerPage : UserControl
         target.AddHandler(DragDrop.DropEvent, OnDrop);
     }
 
+    private async void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.V || e.KeyModifiers != KeyModifiers.Control || ViewModel is not { } vm)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        if (vm.HasCut)
+        {
+            await vm.PasteCommand.ExecuteAsync(null);
+        }
+        else if (vm.PhotoTargetId is { } target && await PickedFiles.FromClipboardAsync(TopLevel.GetTopLevel(this)) is { Count: > 0 } files)
+        {
+            await vm.AddPhotosAsync(target, files);
+        }
+    }
+
     private void OnDragOver(object? sender, DragEventArgs e)
     {
-        var (target, container) = DropTarget(e);
-        e.DragEffects = target is not null && DraggedIds(e) is { Count: > 0 } ids && !ids.Contains(target.Value.Id) ? DragDropEffects.Move : DragDropEffects.None;
-        SetDropHighlight(e.DragEffects == DragDropEffects.Move ? container : null);
+        var files = e.DataTransfer.Contains(DataFormat.File);
+        var (target, container) = DropTarget(e, files, sender);
+        e.DragEffects = target is null || ViewModel is not { CanEdit: true } ? DragDropEffects.None
+            : files ? DragDropEffects.Copy
+            : DraggedIds(e) is { Count: > 0 } ids && !ids.Contains(target.Value.Id) ? DragDropEffects.Move
+            : DragDropEffects.None;
+        SetDropHighlight(e.DragEffects != DragDropEffects.None ? container : null);
         e.Handled = true;
     }
 
     private async void OnDrop(object? sender, DragEventArgs e)
     {
         ClearDropHighlight();
-        var (target, _) = DropTarget(e);
-        if (target is { } t && DraggedIds(e) is { Count: > 0 } ids && ViewModel is { } vm)
+        var files = e.DataTransfer.Contains(DataFormat.File);
+        var (target, _) = DropTarget(e, files, sender);
+        if (target is not { } t || ViewModel is not { } vm)
         {
-            e.Handled = true;
+            return;
+        }
+
+        e.Handled = true;
+        if (files)
+        {
+            await vm.AddPhotosAsync(t.Id, PickedFiles.From(e.DataTransfer.TryGetFiles()));
+        }
+        else if (DraggedIds(e) is { Count: > 0 } ids)
+        {
             await vm.MoveAsync(ids, t.Id, t.Name);
         }
     }
 
-    /// <summary>Контейнер в списке или узел дерева под указателем.</summary>
-    private static ((Guid Id, string Name)? Target, Control? Container) DropTarget(DragEventArgs e)
+    /// <summary>
+    /// Куда бросают: вещи — в контейнер списка или узел дерева; файлы — на любую вещь, в карточку
+    /// или на пустое место списка (текущее место).
+    /// </summary>
+    private ((Guid Id, string Name)? Target, Control? Container) DropTarget(DragEventArgs e, bool files, object? sender)
     {
         var visual = e.Source as Visual;
-        if (visual?.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { DataContext: ItemRowViewModel { IsContainer: true } row } item)
+        if (visual?.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { DataContext: ItemRowViewModel row } item && (files || row.IsContainer))
         {
             return ((row.Id, row.Name), item);
+        }
+
+        if (files && ReferenceEquals(sender, CardPane) && ViewModel?.Details is { } card)
+        {
+            return ((card.Id, card.Name), CardPane);
+        }
+
+        if (files && sender is ListBox list && ViewModel is { CurrentId: { } currentId } vm)
+        {
+            return ((currentId, vm.Breadcrumbs[^1].Name), list);
         }
 
         if (visual?.FindAncestorOfType<TreeViewItem>(includeSelf: true) is { DataContext: PlaceNodeViewModel { IsPlaceholder: false } node } treeItem)

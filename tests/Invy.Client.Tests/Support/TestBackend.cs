@@ -34,6 +34,8 @@ public sealed class TestBackend : WebApplicationFactory<global::Program>
         await connection.Api!.ApplyStarterKitAsync();
         Session = new ClientSession(connection, settings, new DialogService(shell, () => Host), AvaloniaUiDispatcher.Instance);
         await Session.Catalog.LoadAsync(Session.Api);
+        var photos = Session.Photos;
+        Invy.Client.UI.Controls.ItemIcon.PhotoLoader = id => photos.GetAsync(id, Invy.Client.Core.Api.PhotoSize.Thumb);
         shell.AttachSession(Session);
         return Session;
     }

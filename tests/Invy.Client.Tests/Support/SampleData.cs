@@ -45,4 +45,20 @@ public sealed record SampleData(Guid Home, Guid Attic, Guid Box, Guid Bag, Guid 
         await Add("Инструмент", null, "Рулетка 5 м");
         return new SampleData(home, attic, box, bag, cable, shed);
     }
+
+    /// <summary>Картинка-«фото» для тестов: градиент и круг.</summary>
+    public static byte[] Photo(SkiaSharp.SKColor from, SkiaSharp.SKColor to, int width = 640, int height = 480)
+    {
+        using var bitmap = new SkiaSharp.SKBitmap(width, height);
+        using var canvas = new SkiaSharp.SKCanvas(bitmap);
+        using var gradient = new SkiaSharp.SKPaint
+        {
+            Shader = SkiaSharp.SKShader.CreateLinearGradient(new(0, 0), new(width, height), [from, to], SkiaSharp.SKShaderTileMode.Clamp),
+        };
+        canvas.DrawRect(0, 0, width, height, gradient);
+        using var circle = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.White.WithAlpha(160), IsAntialias = true };
+        canvas.DrawCircle(width * 0.6f, height * 0.45f, height * 0.25f, circle);
+        using var data = bitmap.Encode(SkiaSharp.SKEncodedImageFormat.Png, 90);
+        return data.ToArray();
+    }
 }

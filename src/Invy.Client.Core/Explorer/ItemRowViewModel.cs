@@ -1,5 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Invy.Client.Core.Catalog;
+using Invy.Client.Core.Photos;
+using Invy.Client.Core.Session;
 using Invy.Contracts.Catalog;
 using Invy.Contracts.Items;
 
@@ -38,6 +40,13 @@ public sealed partial class ItemRowViewModel(ItemSummaryDto item) : ObservableOb
     /// <summary>Вырезано (Ctrl+X) и ждёт вставки — показывается полупрозрачным.</summary>
     [ObservableProperty]
     public partial bool IsCut { get; set; }
+
+    /// <summary>Превью обложки (WebP 256 px); пока нет — показывается иконка.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasThumbnail))]
+    public partial byte[]? Thumbnail { get; set; }
+
+    public bool HasThumbnail => Thumbnail is not null;
 }
 
 /// <summary>Хлебная крошка: <see cref="Id"/> = null — корень раздела.</summary>
@@ -49,11 +58,14 @@ public sealed record CardField(string Label, string Value, string? Group);
 /// <summary>Карточка вещи в панели деталей.</summary>
 public sealed class ItemCardViewModel
 {
-    public ItemCardViewModel(ItemDetailsDto item, CatalogStore catalog)
+    public ItemCardViewModel(ItemDetailsDto item, ClientSession session)
     {
         ArgumentNullException.ThrowIfNull(item);
-        ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(session);
+        var catalog = session.Catalog;
         Item = item;
+        Photos = new PhotoStripViewModel(session, item.Id);
+        Photos.Load(item.Photos, item.CoverMediaId);
         // Порядок и подписи — как в форме типа; значения уже отформатированы сервером («100 см»).
         var fields = catalog.Type(item.TypeId) is { } type ? CatalogStore.EffectiveFields(type) : [];
         Fields = fields
@@ -104,9 +116,8 @@ public sealed class ItemCardViewModel
 
     public bool HasTags => Tags.Count > 0;
 
-    public IReadOnlyList<MediaDto> Photos => Item.Photos;
-
-    public bool HasPhotos => Item.Photos.Count > 0;
+    /// <summary>Фото: лента, обложка, добавление и удаление.</summary>
+    public PhotoStripViewModel Photos { get; }
 
     public Guid? CoverMediaId => Item.CoverMediaId;
 

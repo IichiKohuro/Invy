@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Invy.Client.Core.Api;
 using Invy.Client.Core.Editor;
+using Invy.Client.Core.Photos;
 using Invy.Client.Core.Session;
 using Invy.Client.Core.Shell;
 using Invy.Contracts.Catalog;
@@ -178,7 +179,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
             CurrentId = id;
             SetBreadcrumbs(current);
             SetItems(page, keepSelection: false);
-            Details = current is null ? null : new ItemCardViewModel(current, _session.Catalog);
+            Details = current is null ? null : Card(current);
             if (ShowTree)
             {
                 await RevealInTreeAsync(current);
@@ -232,7 +233,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
             SetItems(page, keepSelection: true);
             if (SelectedItem is null)
             {
-                Details = current is null ? null : new ItemCardViewModel(current, _session.Catalog);
+                Details = current is null ? null : Card(current);
             }
             else
             {
@@ -272,6 +273,32 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
 
         return moved;
     }
+
+    /// <summary>Добавить фото к вещи (перетаскивание файлов, вставка из буфера).</summary>
+    public async Task<bool> AddPhotosAsync(Guid itemId, IReadOnlyList<PickedFile> files)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        if (!CanEdit || files.Count == 0)
+        {
+            return false;
+        }
+
+        var strip = new PhotoStripViewModel(_session, itemId);
+        if (!await strip.AddFilesAsync(files))
+        {
+            return false;
+        }
+
+        var name = Items.FirstOrDefault(i => i.Id == itemId)?.Name ?? (itemId == CurrentId ? Breadcrumbs[^1].Name : null);
+        _session.Dialogs.Notify(
+            $"{ItemVisuals.Plural(strip.Photos.Count, "фото добавлено", "фото добавлены", "фото добавлены")}{(name is null ? string.Empty : $" — «{name}»")}",
+            NotifyKind.Success);
+        await ReloadAsync();
+        return true;
+    }
+
+    /// <summary>Куда добавлять фото из буфера: выбранная вещь или текущее место.</summary>
+    public Guid? PhotoTargetId => SelectedItem?.Id ?? CurrentId;
 
     public void Dispose() => _session.Changed -= OnChanged;
 
@@ -496,7 +523,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
         else
         {
             _detailsVersion++;
-            Details = _current is null ? null : new ItemCardViewModel(_current, _session.Catalog);
+            Details = _current is null ? null : Card(_current);
         }
     }
 
@@ -527,7 +554,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
             var item = await _session.Api.GetItemAsync(id);
             if (version == _detailsVersion)
             {
-                Details = new ItemCardViewModel(item, _session.Catalog);
+                Details = Card(item);
             }
         }
         catch (Exception ex) when (ex is ApiException or HttpRequestException)
@@ -549,6 +576,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
         }
 
         Total = page.Total;
+        _ = LoadThumbnailsAsync(Items.Where(i => i.CoverMediaId is not null).ToList());
         var selected = selectedId is { } id ? Items.FirstOrDefault(i => i.Id == id) : null;
         if (!ReferenceEquals(selected, SelectedItem))
         {
@@ -559,6 +587,24 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptyText));
+    }
+
+    private ItemCardViewModel Card(ItemDetailsDto item)
+    {
+        var card = new ItemCardViewModel(item, _session);
+        card.Photos.Changed += () => _ = ReloadAsync();
+        return card;
+    }
+
+    private async Task LoadThumbnailsAsync(List<ItemRowViewModel> rows)
+    {
+        foreach (var row in rows)
+        {
+            if (row.CoverMediaId is { } mediaId)
+            {
+                row.Thumbnail = await _session.Photos.GetAsync(mediaId, Api.PhotoSize.Thumb);
+            }
+        }
     }
 
     private void SetBreadcrumbs(ItemDetailsDto? current)

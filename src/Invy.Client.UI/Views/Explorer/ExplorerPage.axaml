@@ -4,6 +4,8 @@
              xmlns:explorer="using:Invy.Client.Core.Explorer"
              xmlns:catalog="using:Invy.Contracts.Catalog"
              xmlns:controls="using:Invy.Client.UI.Controls"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             xmlns:photos="using:Invy.Client.UI.Views.Photos"
              x:Class="Invy.Client.UI.Views.Explorer.ExplorerPage"
              x:DataType="explorer:ExplorerViewModel">
   <UserControl.KeyBindings>
@@ -11,7 +13,6 @@
     <KeyBinding Gesture="F2" Command="{Binding EditCommand}" />
     <KeyBinding Gesture="Delete" Command="{Binding DeleteCommand}" />
     <KeyBinding Gesture="Ctrl+X" Command="{Binding CutCommand}" />
-    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteCommand}" />
     <KeyBinding Gesture="Ctrl+D" Command="{Binding DuplicateCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+M" Command="{Binding MoveToCommand}" />
     <KeyBinding Gesture="Alt+Up" Command="{Binding UpCommand}" />
@@ -137,7 +138,13 @@
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="explorer:ItemRowViewModel">
                 <Grid ColumnDefinitions="Auto,*,Auto" Classes.cut="{Binding IsCut}" Background="Transparent">
-                  <controls:ItemIcon Icon="{Binding Item.Icon}" Role="{Binding Item.Role}" Tint="{Binding Color}" Size="20" Margin="0,0,12,0" />
+                  <Panel Width="32" Height="32" Margin="0,0,12,0">
+                    <controls:ItemIcon Icon="{Binding Item.Icon}" Role="{Binding Item.Role}" Tint="{Binding Color}" Size="20"
+                                       IsVisible="{Binding !HasThumbnail}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border CornerRadius="4" ClipToBounds="True" IsVisible="{Binding HasThumbnail}">
+                      <Image Source="{Binding Thumbnail, Converter={x:Static conv:BitmapConverters.Thumbnail}}" Stretch="UniformToFill" />
+                    </Border>
+                  </Panel>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Subtitle}" Classes="secondary" TextTrimming="CharacterEllipsis" />
@@ -160,9 +167,13 @@
               <DataTemplate x:DataType="explorer:ItemRowViewModel">
                 <Border Width="148" Height="150" Padding="10" Classes.cut="{Binding IsCut}" Background="Transparent">
                   <StackPanel Spacing="6">
-                    <Border Height="72" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
-                      <controls:ItemIcon Icon="{Binding Item.Icon}" Role="{Binding Item.Role}" Tint="{Binding Color}" Size="36"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border Height="72" CornerRadius="6" ClipToBounds="True" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                      <Panel>
+                        <controls:ItemIcon Icon="{Binding Item.Icon}" Role="{Binding Item.Role}" Tint="{Binding Color}" Size="36"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasThumbnail}" />
+                        <Image Source="{Binding Thumbnail, Converter={x:Static conv:BitmapConverters.Thumbnail}}" Stretch="UniformToFill"
+                               IsVisible="{Binding HasThumbnail}" />
+                      </Panel>
                     </Border>
                     <TextBlock Text="{Binding Name}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" TextAlignment="Center" />
                     <TextBlock Text="{Binding Subtitle}" Classes="secondary" TextTrimming="CharacterEllipsis" TextAlignment="Center" />
@@ -189,7 +200,7 @@
       <GridSplitter Grid.Column="3" Background="Transparent" />
 
       <!-- Карточка -->
-      <Border Grid.Column="4" Classes="card">
+      <Border Grid.Column="4" Classes="card" x:Name="CardPane" DragDrop.AllowDrop="True">
         <Panel>
           <TextBlock Text="Выберите вещь, чтобы увидеть подробности" IsVisible="{Binding Details, Converter={x:Static ObjectConverters.IsNull}}"
                      TextWrapping="Wrap" TextAlignment="Center" Opacity="0.6" VerticalAlignment="Center" Margin="24" />
@@ -205,6 +216,8 @@
                   <TextBlock Text="{Binding Subtitle}" Classes="secondary" />
                 </StackPanel>
               </Grid>
+
+              <photos:PhotoStripView DataContext="{Binding Photos}" />
 
               <Grid ColumnDefinitions="Auto,*">
                 <ui:FASymbolIcon Symbol="MapPin" FontSize="14" Opacity="0.7" Margin="0,2,6,0" VerticalAlignment="Top" />

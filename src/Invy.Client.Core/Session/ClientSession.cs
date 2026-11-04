@@ -2,6 +2,7 @@ using Invy.Client.Core.Api;
 using Invy.Client.Core.Catalog;
 using Invy.Client.Core.Connection;
 using Invy.Client.Core.Editor;
+using Invy.Client.Core.Photos;
 using Invy.Contracts.Items;
 using Invy.Contracts.Sync;
 
@@ -47,7 +48,14 @@ public interface IDialogService
 /// Сеанс работы с сервером: API, справочники, изменения в реальном времени, диалоги.
 /// Страницы подписываются на <see cref="Changed"/>; к этому моменту справочники уже обновлены.
 /// </summary>
-public sealed class ClientSession(ServerConnection connection, ISettingsStore settings, IDialogService dialogs, IUiDispatcher dispatcher, RealtimeService? realtime = null)
+/// <param name="photoCacheDirectory">Каталог кэша фото на диске; <c>null</c> — только в памяти.</param>
+public sealed class ClientSession(
+    ServerConnection connection,
+    ISettingsStore settings,
+    IDialogService dialogs,
+    IUiDispatcher dispatcher,
+    RealtimeService? realtime = null,
+    string? photoCacheDirectory = null)
     : IAsyncDisposable
 {
     private readonly Dictionary<Guid, FieldValueDto> _rememberedValues = [];
@@ -59,6 +67,9 @@ public sealed class ClientSession(ServerConnection connection, ISettingsStore se
     public InvyApiClient Api => Connection.Api ?? throw new InvalidOperationException("Нет подключения к серверу");
 
     public CatalogStore Catalog { get; } = new();
+
+    /// <summary>Превью и фото с сервера (память + диск).</summary>
+    public PhotoCache Photos { get; } = new(() => connection.Api ?? throw new InvalidOperationException("Нет подключения к серверу"), photoCacheDirectory);
 
     public RealtimeService Realtime { get; } = realtime ?? new RealtimeService(dispatcher);
 
