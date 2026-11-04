@@ -1,0 +1,9 @@
+GetCurrentThreadId
+GetMessage
+PeekMessage
+PostThreadMessage
+RegisterHotKey
+UnregisterHotKey
+WM_HOTKEY
+WM_QUIT
+WM_USER

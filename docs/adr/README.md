@@ -8,3 +8,4 @@
 |---|---------|--------|
 | [0001](0001-sqlite-fts5-cyrillic.md) | SQLite FTS5 и кириллица: нормализация, коллация, построение запросов | Принято |
 | [0002](0002-ui-avalonia-fluentavalonia.md) | UI: Avalonia 12 + FluentAvalonia 3, темы, Mica, headless-тесты | Принято с оговорками |
+| [0003](0003-desktop-tray-hotkeys-single-instance.md) | Desktop: трей, глобальные горячие клавиши, один экземпляр | Принято с оговорками |
