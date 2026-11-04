@@ -7,3 +7,4 @@
 | № | Решение | Статус |
 |---|---------|--------|
 | [0001](0001-sqlite-fts5-cyrillic.md) | SQLite FTS5 и кириллица: нормализация, коллация, построение запросов | Принято |
+| [0002](0002-ui-avalonia-fluentavalonia.md) | UI: Avalonia 12 + FluentAvalonia 3, темы, Mica, headless-тесты | Принято с оговорками |

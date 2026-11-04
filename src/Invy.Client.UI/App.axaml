@@ -1,6 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:shell="using:Invy.Client.Core.Shell"
+             xmlns:pages="using:Invy.Client.Core.Pages"
+             xmlns:views="using:Invy.Client.UI.Views.Pages"
              x:Class="Invy.Client.UI.App"
              Name="Invy"
              RequestedThemeVariant="Default">
@@ -8,4 +11,20 @@
     <!-- Стиль Windows 11: системная тема и системный цвет акцента -->
     <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
   </Application.Styles>
+
+  <!-- ViewModel страницы → View -->
+  <Application.DataTemplates>
+    <DataTemplate DataType="pages:HomePageViewModel">
+      <views:HomePage />
+    </DataTemplate>
+    <DataTemplate DataType="pages:PlacesPageViewModel">
+      <views:PlacesPage />
+    </DataTemplate>
+    <DataTemplate DataType="pages:SettingsPageViewModel">
+      <views:SettingsPage />
+    </DataTemplate>
+    <DataTemplate DataType="shell:PlaceholderPageViewModel">
+      <views:PlaceholderPage />
+    </DataTemplate>
+  </Application.DataTemplates>
 </Application>

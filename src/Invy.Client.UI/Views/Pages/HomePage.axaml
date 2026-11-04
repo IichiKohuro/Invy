@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:pages="using:Invy.Client.Core.Pages"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             x:Class="Invy.Client.UI.Views.Pages.HomePage"
+             x:DataType="pages:HomePageViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="24,4,24,24" Spacing="16" MaxWidth="960" HorizontalAlignment="Left">
+      <ui:FAInfoBar Title="Нет подключения к серверу"
+                    Message="Макет фазы 0: данные появятся после подключения к Invy Server."
+                    Severity="Informational" IsOpen="True" IsClosable="False" />
+
+      <ItemsControl ItemsSource="{Binding Tiles}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="pages:HomeTile">
+            <Border Width="272" Margin="0,0,12,12" Padding="16" CornerRadius="8" BorderThickness="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+              <StackPanel Spacing="8">
+                <ui:FASymbolIcon Symbol="{Binding Icon, Converter={x:Static conv:FluentSymbolConverter.Instance}}"
+                                 FontSize="24" HorizontalAlignment="Left"
+                                 Foreground="{DynamicResource AccentFillColorDefaultBrush}" />
+                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Subtitle}" Opacity="0.7" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

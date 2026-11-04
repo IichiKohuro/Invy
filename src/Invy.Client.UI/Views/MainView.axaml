@@ -1,5 +1,31 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             x:Class="Invy.Client.UI.Views.MainView">
-  <TextBlock Text="Invy" HorizontalAlignment="Center" VerticalAlignment="Center" />
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:shell="using:Invy.Client.Core.Shell"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             x:Class="Invy.Client.UI.Views.MainView"
+             x:DataType="shell:ShellViewModel">
+  <UserControl.Resources>
+    <!-- Заголовок страницы выровнен по содержимому (отступ 24) -->
+    <Thickness x:Key="NavigationViewHeaderMargin">24,20,0,12</Thickness>
+  </UserControl.Resources>
+
+  <!-- Боковая навигация в стиле Windows 11; на узком экране (Android) сворачивается в «гамбургер» -->
+  <ui:FANavigationView MenuItemsSource="{Binding MenuItems}"
+                       FooterMenuItemsSource="{Binding FooterItems}"
+                       SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+                       Header="{Binding CurrentPage.Title, FallbackValue={x:Null}}"
+                       Content="{Binding CurrentPage}"
+                       AlwaysShowHeader="True"
+                       IsSettingsVisible="False"
+                       IsBackButtonVisible="False"
+                       PaneDisplayMode="Auto"
+                       OpenPaneLength="232">
+    <ui:FANavigationView.MenuItemTemplate>
+      <DataTemplate x:DataType="shell:NavigationItem">
+        <ui:FANavigationViewItem Content="{Binding Title}"
+                                 IconSource="{Binding Icon, Converter={x:Static conv:FluentSymbolConverter.Instance}}" />
+      </DataTemplate>
+    </ui:FANavigationView.MenuItemTemplate>
+  </ui:FANavigationView>
 </UserControl>

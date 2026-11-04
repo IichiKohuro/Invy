@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:pages="using:Invy.Client.Core.Pages"
+             x:Class="Invy.Client.UI.Views.Pages.SettingsPage"
+             x:DataType="pages:SettingsPageViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="24,4,24,24" Spacing="4" MaxWidth="960">
+      <TextBlock Text="Оформление" FontWeight="SemiBold" Margin="0,8,0,8" />
+      <ui:FASettingsExpander Header="Тема" Description="Светлая, тёмная или как в Windows" IconSource="DarkTheme">
+        <ui:FASettingsExpander.Footer>
+          <ComboBox x:Name="ThemeSelector" ItemsSource="{Binding ThemeOptions}" SelectedIndex="{Binding ThemeIndex}" MinWidth="180" />
+        </ui:FASettingsExpander.Footer>
+      </ui:FASettingsExpander>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

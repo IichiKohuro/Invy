@@ -7,10 +7,15 @@ using Invy.Client.UI;
 
 namespace Invy.Client.Tests;
 
-/// <summary>Приложение для headless-тестов UI (без окна и видеокарты).</summary>
+/// <summary>
+/// Приложение для headless-тестов UI: без окна и видеокарты, но с настоящей отрисовкой Skia,
+/// чтобы можно было снимать скриншоты и проверять пиксели.
+/// </summary>
 public static class TestAppBuilder
 {
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
-            .UseHeadless(new AvaloniaHeadlessPlatformOptions());
+            .UseSkia()
+            .WithInterFont()
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }
