@@ -13,3 +13,4 @@
 | [0005](0005-android-host-and-apk-updates.md) | Android: хост Avalonia и самообновление APK | Принято с оговорками |
 | [0006](0006-persistence-audit-sync.md) | Хранение, история изменений и синхронизация | Принято |
 | [0007](0007-device-auth-pairing.md) | Авторизация устройств и сопряжение | Принято |
+| [0008](0008-client-architecture.md) | Архитектура клиента: Client.Core, сеанс, живые обновления, UI | Принято |

@@ -309,5 +309,10 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         }
     }
 
-    private static string AppDataDirectory(Environment.SpecialFolder folder) => Path.Combine(Environment.GetFolderPath(folder), "Invy");
+    /// <summary>
+    /// %AppData%\Invy (Linux: ~/.config/Invy). Папка создаётся, если её нет: без этого на чистой системе
+    /// GetFolderPath возвращает пустую строку и настройки попали бы рядом с программой.
+    /// </summary>
+    private static string AppDataDirectory(Environment.SpecialFolder folder) =>
+        Path.Combine(Environment.GetFolderPath(folder, Environment.SpecialFolderOption.Create), "Invy");
 }

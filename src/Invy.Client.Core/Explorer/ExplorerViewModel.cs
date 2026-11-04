@@ -354,7 +354,19 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
     }
 
     [RelayCommand]
-    private async Task AddAsync()
+    private Task AddAsync() => AddOfRoleAsync(null);
+
+    /// <summary>Ctrl+Shift+N: новый контейнер здесь (коробка, пакет…); в корне мест — место.</summary>
+    [RelayCommand]
+    private Task AddContainerAsync() => AddOfRoleAsync(IsAtRoot && _mode == ExplorerMode.Places ? TypeRole.Place : TypeRole.Container);
+
+    [RelayCommand]
+    private void ShowList() => IsTiles = false;
+
+    [RelayCommand]
+    private void ShowTiles() => IsTiles = true;
+
+    private async Task AddOfRoleAsync(TypeRole? role)
     {
         if (!CanEdit)
         {
@@ -362,7 +374,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
         }
 
         var location = CurrentId is { } id ? new MoveTarget(id, CurrentPathText) : null;
-        var editor = ItemEditorViewModel.ForNew(_session, location, PreferredTypeId());
+        var editor = ItemEditorViewModel.ForNew(_session, location, PreferredTypeId(role));
         if (await _session.Dialogs.EditItemAsync(editor) is { } saved)
         {
             await ReloadAsync();
@@ -708,17 +720,28 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
     }
 
     /// <summary>Тип по умолчанию для «Добавить»: недавний из подходящих по месту (в корне мест — место).</summary>
-    private Guid? PreferredTypeId()
+    private Guid? PreferredTypeId(TypeRole? only = null)
     {
         var recent = _session.Settings.Current.RecentTypeIds.ToList();
         var parentRole = _current?.Role;
         return _session.Catalog.ActiveTypes
+            .Where(t => only is null || t.Role == only)
             .Where(t => parentRole is { } role ? ItemVisuals.CanContain(role, t.Role)
                 : _mode == ExplorerMode.Places ? t.Role == TypeRole.Place : t.Role != TypeRole.Place)
             .OrderBy(t => recent.IndexOf(t.Id) is var i and >= 0 ? i : int.MaxValue)
+            .ThenBy(t => RolePreference(parentRole, t.Role))
             .ThenBy(t => t.SortOrder)
             .FirstOrDefault()?.Id;
     }
+
+    /// <summary>Без истории: в контейнер обычно кладут вещи, в место — контейнеры, в корень мест — места.</summary>
+    private static int RolePreference(TypeRole? parent, TypeRole child) => (parent, child) switch
+    {
+        (TypeRole.Container, TypeRole.Item) => 0,
+        (TypeRole.Place, TypeRole.Container) => 0,
+        (TypeRole.Place, TypeRole.Item) => 1,
+        _ => 2,
+    };
 
     private async void OnChanged(ChangeBatch batch)
     {

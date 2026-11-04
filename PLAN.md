@@ -3,7 +3,7 @@
 > Целевая архитектура, модель данных, UX и поэтапный план реализации Invy — гибкого приложения для домашней инвентаризации.
 > Описание для пользователя — в [README.md](README.md).
 
-**Статус:** фазы 0–1 выполнены (для фазы 0 осталась ручная проверка на Windows и Android) · **Версия плана:** 1.2 · **Дата:** 2026-11-04
+**Статус:** фазы 0–2 выполнены (осталась ручная проверка на Windows и Android: Mica, трей, горячие клавиши, DPAPI, обновления) · **Версия плана:** 1.2 · **Дата:** 2026-11-04
 
 ## Содержание
 
@@ -151,7 +151,7 @@ Invy/
 │   ├── Invy.Application/          # сценарии (use cases) и порты: БД, чтение, медиа, уведомления, часы
 │   ├── Invy.Infrastructure/       # EF Core + SQLite, миграции, Dapper-запросы, FTS5, медиа, бэкапы, аудит
 │   ├── Invy.Api/                  # ASP.NET Core: REST, SignalR Hub, служба Windows, discovery, фид обновлений
-│   ├── Invy.Client.Core/          # Refit-клиент, SignalR-клиент, кэши, ViewModels — без зависимости от UI
+│   ├── Invy.Client.Core/          # API-клиент, SignalR-клиент, кэши, ViewModels — без зависимости от UI
 │   ├── Invy.Client.UI/            # Avalonia: Views, стили, ресурсы, иконки — общее для Desktop и Android
 │   ├── Invy.Desktop/              # хост Windows: трей, горячие клавиши, автозапуск, Velopack, single instance
 │   └── Invy.Android/              # хост Android: камера, установка APK, обнаружение сервера
@@ -186,7 +186,7 @@ Invy.Api ──► Invy.Infrastructure ──► Invy.Application ──► Invy
 | SQL | EF Core 10 (запись, миграции), Dapper (чтение) |
 | UI | Avalonia UI, FluentAvalonia, FluentIcons.Avalonia (Fluent UI System Icons, MIT) |
 | MVVM | CommunityToolkit.Mvvm (source generators, `WeakReferenceMessenger`) |
-| HTTP-клиент | Refit + `Microsoft.Extensions.Http.Resilience` |
+| HTTP-клиент | `HttpClient` + System.Text.Json source generation — свой `InvyApiClient` вместо Refit ([ADR 0008](docs/adr/0008-client-architecture.md)) |
 | JSON | System.Text.Json + source generation (trim-safe для Android) |
 | Изображения | SkiaSharp (превью, поворот по EXIF, удаление метаданных) |
 | Обновления | Velopack (Desktop), собственный апдейтер APK (Android) |
@@ -699,19 +699,19 @@ LIMIT @take OFFSET @skip;
 ### 7.1 Общая архитектура
 
 ```text
-View (Avalonia XAML) ⇄ ViewModel (CommunityToolkit.Mvvm) → сервисы Invy.Client.Core → Refit API / SignalR
+View (Avalonia XAML) ⇄ ViewModel (CommunityToolkit.Mvvm) → сервисы Invy.Client.Core → InvyApiClient / SignalR
                               ▲
                               └── WeakReferenceMessenger: ItemChanged, CatalogChanged, ConnectionChanged
 ```
 
 | Сервис | Назначение |
 |--------|------------|
-| `ApiClient` | Refit + resilience-обработчик (повторы для идемпотентных запросов, таймауты), токен, заголовок `X-Invy-Client` |
+| `InvyApiClient` | `HttpClient` + source-generated JSON, токен устройства; ошибки → `ApiException` (422 — по полям, 409 — с актуальной версией) |
 | `RealtimeService` | SignalR, переподключение, догоняющая синхронизация по `seq` |
-| `CatalogCache` | Типы, поля, справочники, теги — целиком в памяти, обновляются по событиям |
+| `CatalogStore` | Типы, поля, справочники, теги — целиком в памяти, обновляются по событиям |
 | `ItemCache` | LRU открытых вещей и содержимого контейнеров |
-| `ImageCache` | Дисковый кэш превью (медиа неизменяемы — инвалидация не нужна) |
-| `ConnectionMonitor` | Индикатор «Онлайн / Переподключение / Нет связи» |
+| `PhotoCache` | Превью в памяти и на диске (медиа неизменяемы — инвалидация не нужна) |
+| `ClientSession` | Сеанс: подключение, справочники, живые обновления, фото, диалоги; уведомления «Нет связи — переподключаемся…» |
 | `NavigationService`, `DialogService`, `NotificationService` | Абстракции UI, реализуются в `Invy.Client.UI` |
 | `ServerDiscovery`, `PairingService` | Поиск сервера и сопряжение |
 | `UpdateService`, `PlatformServices` | Обновления, камера, файлы, автозапуск, горячие клавиши — реализации в Desktop/Android |
@@ -797,7 +797,7 @@ View (Avalonia XAML) ⇄ ViewModel (CommunityToolkit.Mvvm) → сервисы In
 - Сенсорные цели ≥ 48 dp, тёмная тема по системной настройке.
 - **Версии:** minSdk 26 (Android 8.0), targetSdk — актуальный.
 - **Разрешения:** `INTERNET`, `ACCESS_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE` (обнаружение), `REQUEST_INSTALL_PACKAGES` (обновления), `POST_NOTIFICATIONS` (Android 13+).
-- **Тримминг:** source generators для JSON и Refit, без рефлексии; Release-сборка проверяется на устройстве с фазы 0.
+- **Тримминг:** source generators для JSON, без рефлексии; Release-сборка проверяется на устройстве с фазы 0.
 - **Could:** «Поделиться → Invy» для фото из галереи, сканирование QR-этикеток, виджет быстрого поиска.
 
 ### 7.7 Горячие клавиши (Desktop)
@@ -935,19 +935,23 @@ flowchart LR
 
 ### Фаза 2. Desktop MVP — 12–15 дней
 
-- [ ] Client.Core: Refit-клиент, `RealtimeService`, `CatalogCache`, `ConnectionMonitor`, навигация, диалоги
-- [ ] Оболочка: Mica, NavigationView, заголовок с поиском, темы «Системная / Светлая / Тёмная»
-- [ ] «Проводник»: дерево мест, содержимое (список / плитки), хлебные крошки, панель деталей
-- [ ] Карточка и редактор вещи с динамическими полями (`DataTemplateSelector` по типу данных)
-- [ ] Конструктор типов с предпросмотром, справочники, теги
-- [ ] Фото: диалог, drag & drop, вставка из буфера, галерея, обложка, кэш превью
-- [ ] Иконки (Fluent / эмодзи / свои) и цвет
-- [ ] Перемещение: drag & drop, вырезать/вставить, «Переместить в…»
-- [ ] Быстрое добавление, «Сохранить и добавить ещё», дублирование
-- [ ] Обновление UI по SignalR, диалог конфликта версий
-- [ ] Стартовый набор типов
+- [x] Client.Core: свой `InvyApiClient` (вместо Refit), `RealtimeService`, `CatalogStore`, `ClientSession`, `PhotoCache`, диалоги — [ADR 0008](docs/adr/0008-client-architecture.md)
+- [x] Подключение: экран адреса и кода сопряжения, одобрение новых устройств администратором, токен под DPAPI, «Сменить сервер»
+- [x] Оболочка: Mica, NavigationView, заголовок с полем поиска (сам поиск — фаза 3), темы «Системная / Светлая / Тёмная» (сохраняются), уведомления
+- [x] «Проводник»: дерево мест, содержимое (список / плитки, сортировка), хлебные крошки, панель деталей
+- [x] Карточка и редактор вещи с динамическими полями (`FieldTemplateSelector` по типу данных), ошибки сервера — у своих полей
+- [x] Конструктор типов с живым предпросмотром формы, справочники (новый — прямо из конструктора), теги (переименование, цвет, объединение)
+- [x] Фото: диалог, drag & drop, вставка из буфера, лента, обложка, просмотр, кэш превью; у новой вещи фото загружаются после сохранения
+- [x] Иконки (Fluent / эмодзи / своя — из фото вещи) и цвет
+- [x] Перемещение: drag & drop, вырезать/вставить, «Переместить в…»
+- [x] Быстрое добавление (`Ctrl+N`, из трея — `Ctrl+Alt+N`), «Сохранить и добавить ещё», дублирование
+- [x] Обновление UI по SignalR, диалог конфликта версий
+- [x] Стартовый набор типов (на «Типах» и в пустом «Проводнике»)
+- [x] Тесты: ViewModel против сервера в памяти, headless-снимки на живых данных, сквозная проверка — 191 тест
 
-**Готово, когда:** цепочка «Чердак → Серая коробка → Пакет → Кабель» с фото заводится за пару минут; изменения видны на втором ПК ≤ 1 с.
+**Готово, когда:** цепочка «Чердак → Серая коробка → Пакет → Кабель» с фото заводится за пару минут; изменения видны на втором ПК ≤ 1 с. ✅ Сквозная проверка настоящего Desktop против настоящего сервера: цепочка с двумя фото — 1,2 с работы программы (остальное — ввод человеком), задержка до второго устройства — медиана 19 мс, максимум 60 мс ([отчёт](docs/checks/phase-2/README.md)).
+
+Перенесено: табличный вид (`Ctrl+2`) и «Разобрать коробку» — по мере готовности поиска (фаза 3); своя картинка-иконка для типа; ручная проверка Mica, трея и DPAPI на Windows — [чек-лист](docs/spikes/phase-0/checklist.md).
 
 ### Фаза 3. Поиск — 6–8 дней
 

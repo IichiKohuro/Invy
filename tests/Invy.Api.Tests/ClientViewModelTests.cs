@@ -237,6 +237,33 @@ public sealed class ClientViewModelTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Add_suggests_type_that_fits_the_location()
+    {
+        var (session, dialogs) = await SessionAsync(starterKit: true);
+        var garage = await SaveNewAsync(session, null, "Место", e => e.Name = "Гараж");
+        var box = await SaveNewAsync(session, new MoveTarget(garage.Id, "Гараж"), "Коробка", e => e.Name = "Ящик");
+        using var explorer = new ExplorerViewModel(session);
+        await explorer.ActivateAsync();
+        session.Settings.Save(session.Settings.Current with { RecentTypeIds = [] });   // как на новом устройстве
+
+        // Корень мест — место; место — контейнер; контейнер — вещь (не «Шкаф» в коробку).
+        await explorer.AddCommand.ExecuteAsync(null);
+        dialogs.LastEditor!.SelectedType!.Role.ShouldBe(TypeRole.Place);
+        await explorer.NavigateAsync(garage.Id);
+        await explorer.AddCommand.ExecuteAsync(null);
+        dialogs.LastEditor!.SelectedType!.Role.ShouldBe(TypeRole.Container);
+        await explorer.NavigateAsync(box.Id);
+        await explorer.AddCommand.ExecuteAsync(null);
+        dialogs.LastEditor!.SelectedType!.Role.ShouldBe(TypeRole.Item);
+        dialogs.LastEditor.LocationText.ShouldBe("Гараж › Ящик");
+
+        // С историей — последний использованный подходящий тип.
+        session.RememberType(session.Catalog.ActiveTypes.Single(t => t.Name == "Пакет").Id);
+        await explorer.AddCommand.ExecuteAsync(null);
+        dialogs.LastEditor!.SelectedType!.Name.ShouldBe("Пакет");
+    }
+
+    [Fact]
     public async Task Explorer_refreshes_on_changes_from_another_device()
     {
         var (session, _) = await SessionAsync(starterKit: true, realtime: true);
@@ -348,7 +375,13 @@ public sealed class ClientViewModelTests : IAsyncLifetime
             return Task.FromResult(Answers.Count > 0 ? Answers.Dequeue() : DialogChoice.Primary);
         }
 
-        public Task<ItemDetailsDto?> EditItemAsync(ItemEditorViewModel editor) => editor.TrySaveAsync();
+        public ItemEditorViewModel? LastEditor { get; private set; }
+
+        public Task<ItemDetailsDto?> EditItemAsync(ItemEditorViewModel editor)
+        {
+            LastEditor = editor;
+            return editor.TrySaveAsync();
+        }
 
         public Task<ItemTypeDto?> EditTypeAsync(Invy.Client.Core.Catalog.TypeEditorViewModel editor) => editor.TrySaveAsync();
 

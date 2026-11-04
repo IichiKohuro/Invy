@@ -126,7 +126,7 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             page = item.Key switch
             {
-                "home" => new HomePageViewModel(),
+                "home" => new HomePageViewModel(Navigate),
                 "settings" => new SettingsPageViewModel(_themeService, _updater, Session?.Connection.ServerUrl?.ToString() ?? _serverAddress, this),
                 "places" when Session is not null => new ExplorerViewModel(Session, ExplorerMode.Places),
                 "unsorted" when Session is not null => new ExplorerViewModel(Session, ExplorerMode.Unsorted),

@@ -7,10 +7,6 @@
              x:DataType="pages:HomePageViewModel">
   <ScrollViewer>
     <StackPanel Margin="24,4,24,24" Spacing="16" MaxWidth="960" HorizontalAlignment="Left">
-      <ui:FAInfoBar Title="Нет подключения к серверу"
-                    Message="Макет фазы 0: данные появятся после подключения к Invy Server."
-                    Severity="Informational" IsOpen="True" IsClosable="False" />
-
       <ItemsControl ItemsSource="{Binding Tiles}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
@@ -19,9 +15,12 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="pages:HomeTile">
-            <Border Width="272" Margin="0,0,12,12" Padding="16" CornerRadius="8" BorderThickness="1"
+            <Button Width="272" Margin="0,0,12,12" Padding="16" CornerRadius="8" BorderThickness="1"
+                    HorizontalContentAlignment="Left" VerticalContentAlignment="Top"
                     Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    Command="{Binding $parent[ItemsControl].((pages:HomePageViewModel)DataContext).OpenCommand}"
+                    CommandParameter="{Binding}">
               <StackPanel Spacing="8">
                 <ui:FASymbolIcon Symbol="{Binding Icon, Converter={x:Static conv:FluentSymbolConverter.Instance}}"
                                  FontSize="24" HorizontalAlignment="Left"
@@ -29,7 +28,7 @@
                 <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding Subtitle}" Opacity="0.7" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
+            </Button>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

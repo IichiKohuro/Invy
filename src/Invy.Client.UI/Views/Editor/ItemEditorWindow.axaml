@@ -9,8 +9,8 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
   <Window.KeyBindings>
-    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SaveCommand}" />
-    <KeyBinding Gesture="Ctrl+Shift+Enter" Command="{Binding SaveAndAddAnotherCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SaveAndContinueCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
   </Window.KeyBindings>
 
@@ -21,9 +21,9 @@
             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button x:Name="SaveButton" Classes="accent" Content="Сохранить" Command="{Binding SaveCommand}" MinWidth="120" ToolTip.Tip="Ctrl+Enter" />
+          <Button x:Name="SaveButton" Classes="accent" Content="Сохранить" Command="{Binding SaveCommand}" MinWidth="120" ToolTip.Tip="Ctrl+S" />
           <Button Content="Сохранить и добавить ещё" Command="{Binding SaveAndAddAnotherCommand}"
-                  IsVisible="{Binding CanSaveAndAddAnother}" ToolTip.Tip="Ctrl+Shift+Enter" />
+                  IsVisible="{Binding CanSaveAndAddAnother}" ToolTip.Tip="Ctrl+Enter" />
         </StackPanel>
         <Button Grid.Column="1" Content="Отмена" Command="{Binding CancelCommand}" MinWidth="100" />
       </Grid>

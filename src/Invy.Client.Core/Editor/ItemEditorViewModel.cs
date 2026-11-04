@@ -151,7 +151,7 @@ public sealed partial class ItemEditorViewModel : ObservableObject, ILookEditor
     public partial string? SavedMessage { get; private set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAndAddAnotherCommand))]
+    [NotifyCanExecuteChangedFor(nameof(SaveCommand), nameof(SaveAndAddAnotherCommand), nameof(SaveAndContinueCommand))]
     public partial bool IsBusy { get; private set; }
 
     /// <summary>Последняя сохранённая вещь — результат диалога.</summary>
@@ -284,6 +284,10 @@ public sealed partial class ItemEditorViewModel : ObservableObject, ILookEditor
             SavedMessage = $"Добавлено: «{saved.Name}». Можно заполнять следующую.";
         }
     }
+
+    /// <summary>Ctrl+Enter: новая вещь — «Сохранить и добавить ещё», существующая — «Сохранить».</summary>
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private Task SaveAndContinueAsync() => IsNew ? SaveAndAddAnotherAsync() : SaveAsync();
 
     [RelayCommand]
     private void Cancel() => CloseRequested?.Invoke();

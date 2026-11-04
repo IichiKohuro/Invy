@@ -6,9 +6,9 @@
 ![Avalonia UI](https://img.shields.io/badge/UI-Avalonia-8B44AC)
 ![SQLite](https://img.shields.io/badge/DB-SQLite-003B57)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Android-0078D4)
-![Status](https://img.shields.io/badge/status-проектирование-orange)
+![Status](https://img.shields.io/badge/status-разработка-orange)
 
-> **Статус:** в разработке. Выполнены фаза 0 (каркас, CI, проверочные прототипы) и фаза 1 — ядро сервера: REST API, история изменений, сопряжение устройств, SignalR ([ADR](docs/adr/README.md)). README описывает целевое поведение версии 1.0; план работ, архитектура и модель данных — в [PLAN.md](PLAN.md).
+> **Статус:** в разработке. Готовы фаза 0 (каркас, CI, проверочные прототипы), фаза 1 — ядро сервера (REST API, история изменений, сопряжение устройств, SignalR) и фаза 2 — Desktop MVP: «Проводник», редактор вещей, конструктор типов, фото, перемещение, живые обновления ([ADR](docs/adr/README.md), [проверка фазы 2](docs/checks/phase-2/README.md)). README описывает целевое поведение версии 1.0; план работ, архитектура и модель данных — в [PLAN.md](PLAN.md).
 
 Invy — это «Проводник для вещей». Места, шкафы, коробки и пакеты работают как папки, вещи — как файлы. Кабели, переходники, инструменты, документы — всё заносится за секунды и находится ещё быстрее. Один сервер в домашней сети, приложение для Windows (живёт в трее) и для Android; изменение на одном устройстве сразу видно на всех.
 
@@ -29,6 +29,8 @@ Invy — это «Проводник для вещей». Места, шкафы
 - **Удобный ввод:** быстрое добавление, «Сохранить и добавить ещё», дублирование, автодополнение, авто-название по шаблону, режим «Разобрать коробку».
 
 ## Как это выглядит
+
+![Invy Desktop: дерево мест, содержимое пакета и карточка вещи](docs/checks/phase-2/explorer-photos.png)
 
 ```text
 Дом                                   [Место]
@@ -66,7 +68,7 @@ flowchart LR
 | Платформа | .NET 10, C# 14 |
 | Сервер | ASP.NET Core Web API (Minimal API), SignalR, OpenAPI + Scalar |
 | Данные | SQLite (WAL, FTS5), EF Core 10 (схема, миграции, запись), Dapper (поиск, дерево, отчёты) |
-| Клиенты | Avalonia UI + FluentAvalonia (Desktop и Android из одного кода), CommunityToolkit.Mvvm, Refit |
+| Клиенты | Avalonia UI + FluentAvalonia (Desktop и Android из одного кода), CommunityToolkit.Mvvm, HttpClient + System.Text.Json (source generation) |
 | Обновления | Velopack (Desktop), собственный апдейтер APK (Android) |
 | Прочее | SkiaSharp (превью фото), Serilog, Cronos, QRCoder |
 
@@ -275,10 +277,16 @@ curl -s -X POST http://localhost:5470/api/v1/pairing/requests -H "Content-Type: 
 
 Полученный `token` передаётся в заголовке `Authorization: Bearer <token>`. Остальные устройства получают 6-значный код и ждут, пока администратор одобрит запрос (`POST /api/v1/pairing/requests/{id}/approve`). Изменения приходят в реальном времени через SignalR-хаб `/hubs/inventory` (событие `Changed`); пропущенное догружается через `GET /api/v1/sync/changes?since=<seq>`.
 
-Desktop (сервер по умолчанию — `http://localhost:5470`; другой адрес — переменная `INVY_SERVER` или поле в настройках):
+Desktop. При первом запуске — экран подключения: адрес подставлен (`http://localhost:5470` или переменная `INVY_SERVER`) → «Подключиться». Дальше приложение подключается само; сменить сервер — *Настройки → Сервер*:
 
 ```bash
 dotnet run --project src/Invy.Desktop
+```
+
+Сквозная проверка против запущенного сервера (второе устройство, замер задержки живых обновлений — [отчёт фазы 2](docs/checks/phase-2/README.md)):
+
+```bash
+dotnet run tools/e2e-phase2.cs -- http://127.0.0.1:5470/ latency
 ```
 
 Android (эмулятор или телефон с отладкой по USB):
@@ -327,7 +335,7 @@ src/
   Invy.Desktop          Windows: трей, горячие клавиши, автозапуск, Velopack
   Invy.Android          Android: камера, установка обновлений
 tests/                  unit-, интеграционные, API- и UI-тесты
-tools/                  скрипты выпуска и установки
+tools/                  скрипты выпуска, установки и сквозной проверки
 docs/                   ADR, макеты, чек-лист релиза
 ```
 

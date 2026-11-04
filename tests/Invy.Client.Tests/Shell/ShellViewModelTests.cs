@@ -28,6 +28,18 @@ public class ShellViewModelTests
     }
 
     [Fact]
+    public void Home_tiles_open_sections()
+    {
+        var shell = new ShellViewModel(new FakeThemeService());
+        var home = shell.CurrentPage.ShouldBeOfType<HomePageViewModel>();
+
+        home.OpenCommand.Execute(home.Tiles.Single(t => t.Key == "unsorted"));
+
+        shell.SelectedItem!.Key.ShouldBe("unsorted");
+        home.Tiles.Select(t => t.Key).ShouldAllBe(key => shell.MenuItems.Any(m => m.Key == key));
+    }
+
+    [Fact]
     public void Unknown_key_keeps_current_page()
     {
         var shell = new ShellViewModel(new FakeThemeService());

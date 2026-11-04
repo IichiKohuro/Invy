@@ -10,7 +10,11 @@
              x:DataType="explorer:ExplorerViewModel">
   <UserControl.KeyBindings>
     <KeyBinding Gesture="Ctrl+N" Command="{Binding AddCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding AddContainerCommand}" />
     <KeyBinding Gesture="F2" Command="{Binding EditCommand}" />
+    <KeyBinding Gesture="Ctrl+E" Command="{Binding EditCommand}" />
+    <KeyBinding Gesture="Ctrl+D1" Command="{Binding ShowListCommand}" />
+    <KeyBinding Gesture="Ctrl+D3" Command="{Binding ShowTilesCommand}" />
     <KeyBinding Gesture="Delete" Command="{Binding DeleteCommand}" />
     <KeyBinding Gesture="Ctrl+X" Command="{Binding CutCommand}" />
     <KeyBinding Gesture="Ctrl+D" Command="{Binding DuplicateCommand}" />
@@ -67,10 +71,10 @@
       </ui:FACommandBar>
       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
         <ComboBox ItemsSource="{Binding SortOptions}" SelectedIndex="{Binding SortIndex}" MinWidth="170" ToolTip.Tip="Сортировка" />
-        <ToggleButton IsChecked="{Binding !IsTiles}" ToolTip.Tip="Список" Padding="8">
+        <ToggleButton IsChecked="{Binding !IsTiles}" ToolTip.Tip="Список (Ctrl+1)" Padding="8">
           <ui:FASymbolIcon Symbol="List" FontSize="16" />
         </ToggleButton>
-        <ToggleButton IsChecked="{Binding IsTiles}" ToolTip.Tip="Плитки" Padding="8">
+        <ToggleButton IsChecked="{Binding IsTiles}" ToolTip.Tip="Плитки (Ctrl+3)" Padding="8">
           <ui:FASymbolIcon Symbol="ViewAll" FontSize="16" />
         </ToggleButton>
       </StackPanel>

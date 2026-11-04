@@ -12,7 +12,7 @@ namespace Invy.Client.UI.Views.Explorer;
 /// <summary>
 /// «Проводник». Перетаскивание: вещи из списка — на контейнер в списке или на узел дерева;
 /// файлы-картинки — на вещь, карточку или пустое место списка (фото текущего места).
-/// Ctrl+V: вставить вырезанное, а если ничего не вырезано — картинки из буфера как фото.
+/// Ctrl+V: вставить вырезанное, а если ничего не вырезано — картинки из буфера как фото; Ctrl+Shift+V — всегда фото.
 /// Двойной щелчок или Enter — открыть контейнер или изменить вещь.
 /// </summary>
 public partial class ExplorerPage : UserControl
@@ -57,6 +57,25 @@ public partial class ExplorerPage : UserControl
         AddDropHandlers(PlacesTree);
         AddDropHandlers(CardPane);
         KeyDown += OnKeyDown;
+
+        // Горячие клавиши страницы (Ctrl+N, Delete, F2…) работают, только пока фокус внутри неё:
+        // щелчок по пустому месту не должен уводить фокус из страницы.
+        Focusable = true;
+        AddHandler(PointerPressedEvent, (_, _) => KeepFocus(), RoutingStrategies.Tunnel, handledEventsToo: true);
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        KeepFocus();
+    }
+
+    private void KeepFocus()
+    {
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Visual focused || !this.IsVisualAncestorOf(focused))
+        {
+            Focus();
+        }
     }
 
     private ExplorerViewModel? ViewModel => DataContext as ExplorerViewModel;
@@ -122,13 +141,14 @@ public partial class ExplorerPage : UserControl
 
     private async void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.V || e.KeyModifiers != KeyModifiers.Control || ViewModel is not { } vm)
+        if (e.Key != Key.V || ViewModel is not { } vm || e.KeyModifiers is not (KeyModifiers.Control or (KeyModifiers.Control | KeyModifiers.Shift)))
         {
             return;
         }
 
+        // Ctrl+Shift+V — всегда фото из буфера; Ctrl+V — вырезанные вещи, а если их нет — тоже фото.
         e.Handled = true;
-        if (vm.HasCut)
+        if (vm.HasCut && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             await vm.PasteCommand.ExecuteAsync(null);
         }

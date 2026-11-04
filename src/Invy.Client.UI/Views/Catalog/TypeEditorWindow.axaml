@@ -12,6 +12,7 @@
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False">
   <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
     <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SaveCommand}" />
     <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
   </Window.KeyBindings>
@@ -57,7 +58,7 @@
             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="12">
-          <Button Classes="accent" Content="Сохранить тип" Command="{Binding SaveCommand}" MinWidth="140" ToolTip.Tip="Ctrl+Enter" />
+          <Button Classes="accent" Content="Сохранить тип" Command="{Binding SaveCommand}" MinWidth="140" ToolTip.Tip="Ctrl+S" />
           <TextBlock Text="{Binding Error}" Classes="error" VerticalAlignment="Center" MaxWidth="560" />
         </StackPanel>
         <Button Grid.Column="1" Content="Отмена" Command="{Binding CancelCommand}" MinWidth="100" />
