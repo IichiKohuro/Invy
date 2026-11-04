@@ -21,15 +21,20 @@ public partial class App : Application
     /// <summary>Оболочка приложения; доступна хостам (трей, горячие клавиши) для навигации.</summary>
     public ShellViewModel? Shell { get; private set; }
 
+    /// <summary>Подключение к серверу и текущий сеанс (есть, когда приложение запущено хостом).</summary>
+    public AppConnector? Connector { get; private set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
-        Shell = new ShellViewModel(new ThemeService(this), _host?.Updater, _host?.DefaultServerAddress);
+        Shell = new ShellViewModel(new ThemeService(this, _host?.Settings), _host?.Updater, _host?.DefaultServerAddress);
 
         if (_host is not null)
         {
+            Connector = new AppConnector(_host, Shell);
             _host.OnFrameworkInitialized(this, Shell);
+            _ = Connector.AutoConnectAsync();
         }
         else
         {

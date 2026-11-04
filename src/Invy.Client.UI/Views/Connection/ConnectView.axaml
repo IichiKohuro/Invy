@@ -1,0 +1,48 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:connection="using:Invy.Client.Core.Connection"
+             x:Class="Invy.Client.UI.Views.Connection.ConnectView"
+             x:DataType="connection:ConnectViewModel">
+  <!-- Подключение к серверу: адрес → «Подключиться»; при сопряжении — крупный код для сверки с администратором -->
+  <Border HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" Padding="32" CornerRadius="8" BorderThickness="1"
+          Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+    <StackPanel Spacing="16">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Image Source="avares://Invy.Client.UI/Assets/invy-256.png" Width="40" Height="40" />
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Подключение к Invy" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock Text="Сервер с вашими вещами в домашней сети" Opacity="0.65" />
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" />
+
+      <!-- Код сопряжения -->
+      <Border IsVisible="{Binding IsWaitingForApproval}" Padding="16" CornerRadius="6" Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+        <TextBlock x:Name="PairingCode" Text="{Binding PairingCode}" FontSize="40" FontWeight="SemiBold" LetterSpacing="8"
+                   FontFamily="Cascadia Mono, Consolas, monospace" HorizontalAlignment="Center" />
+      </Border>
+
+      <StackPanel Spacing="6" IsVisible="{Binding !IsWaitingForApproval}">
+        <TextBlock Text="Адрес сервера" FontSize="12" Opacity="0.85" />
+        <TextBox x:Name="AddressBox" Text="{Binding Address}" PlaceholderText="192.168.1.10 или home-pc:5470" IsEnabled="{Binding !IsBusy}">
+          <TextBox.KeyBindings>
+            <KeyBinding Gesture="Enter" Command="{Binding ConnectCommand}" />
+          </TextBox.KeyBindings>
+        </TextBox>
+      </StackPanel>
+
+      <ui:FAInfoBar Severity="Error" Title="Не удалось подключиться" Message="{Binding Error}" IsClosable="False"
+                    IsOpen="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="accent" Content="Подключиться" Command="{Binding ConnectCommand}" IsVisible="{Binding !IsBusy}" MinWidth="140" />
+          <ui:FAProgressRing IsVisible="{Binding IsBusy}" IsIndeterminate="True" Width="28" Height="28" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Отмена" Command="{Binding ConnectCancelCommand}" IsVisible="{Binding IsBusy}" />
+      </Grid>
+    </StackPanel>
+  </Border>
+</UserControl>

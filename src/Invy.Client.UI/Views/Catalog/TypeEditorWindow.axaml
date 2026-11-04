@@ -1,0 +1,275 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:FluentAvalonia.UI.Controls"
+        xmlns:catalog="using:Invy.Client.Core.Catalog"
+        xmlns:contracts="using:Invy.Contracts.Catalog"
+        xmlns:controls="using:Invy.Client.UI.Controls"
+        xmlns:editorViews="using:Invy.Client.UI.Views.Editor"
+        x:Class="Invy.Client.UI.Views.Catalog.TypeEditorWindow"
+        x:DataType="catalog:TypeEditorViewModel"
+        Title="{Binding Title}"
+        Width="1180" Height="820" MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+Enter" Command="{Binding SaveCommand}" />
+    <KeyBinding Gesture="Escape" Command="{Binding CancelCommand}" />
+  </Window.KeyBindings>
+
+  <Window.Styles>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Opacity" Value="0.85" />
+    </Style>
+    <Style Selector="TextBlock.error">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="15" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Padding" Value="7" />
+      <Setter Property="Theme" Value="{DynamicResource TransparentButton}" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Padding="24,16"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button Classes="accent" Content="Сохранить тип" Command="{Binding SaveCommand}" MinWidth="140" ToolTip.Tip="Ctrl+Enter" />
+          <TextBlock Text="{Binding Error}" Classes="error" VerticalAlignment="Center" MaxWidth="560" />
+        </StackPanel>
+        <Button Grid.Column="1" Content="Отмена" Command="{Binding CancelCommand}" MinWidth="100" />
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="*,Auto,440">
+      <!-- Конструктор -->
+      <ScrollViewer>
+        <StackPanel Margin="24,16,24,24" Spacing="14">
+          <Grid ColumnDefinitions="*,8,Auto">
+            <StackPanel>
+              <TextBlock Classes="caption" Text="Название типа" />
+              <TextBox x:Name="NameBox" Text="{Binding Name}" PlaceholderText="Например, «Кабель» или «Коробка»" MaxLength="100" />
+              <TextBlock Classes="error" Text="{Binding NameError}" IsVisible="{Binding NameError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Classes="caption" Text="Иконка" />
+              <Button Padding="8,4" Height="32" ToolTip.Tip="Иконка и цвет типа">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <controls:ItemIcon Icon="{Binding Icon}" Role="{Binding Role.Role}" Tint="{Binding Color}" Size="18" />
+                  <ui:FASymbolIcon Symbol="ChevronDown" FontSize="10" Opacity="0.6" VerticalAlignment="Center" />
+                </StackPanel>
+                <Button.Flyout>
+                  <Flyout Placement="BottomEdgeAlignedRight">
+                    <controls:IconPickerPanel />
+                  </Flyout>
+                </Button.Flyout>
+              </Button>
+            </StackPanel>
+          </Grid>
+
+          <StackPanel>
+            <TextBlock Classes="caption" Text="Что это" />
+            <ListBox ItemsSource="{x:Static catalog:TypeEditorViewModel.Roles}" SelectedItem="{Binding Role}" Background="Transparent">
+              <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+              </ListBox.ItemsPanel>
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="catalog:RoleOption">
+                  <StackPanel Spacing="2" Margin="2">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Hint}" FontSize="12" Opacity="0.65" TextWrapping="Wrap" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,12,160">
+            <StackPanel>
+              <TextBlock Classes="caption" Text="На основе типа" />
+              <ComboBox ItemsSource="{Binding BaseTypes}" SelectedItem="{Binding BaseType}" HorizontalAlignment="Stretch"
+                        DisplayMemberBinding="{Binding Name, x:DataType=catalog:BaseTypeOption}" />
+              <TextBlock Classes="hint" Text="Характеристики базового типа достаются и этому (например, «Кабель» → «Кабель USB»)." />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Classes="caption" Text="Единица по умолчанию" />
+              <TextBox Text="{Binding DefaultUnit}" PlaceholderText="шт." MaxLength="20" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel>
+            <TextBlock Classes="caption" Text="Шаблон названия" />
+            <TextBox Text="{Binding TitleTemplate}" PlaceholderText="{}{Разъём 1} → {Разъём 2}, {Длина} см" />
+            <TextBlock Classes="error" Text="{Binding TitleTemplateError}" IsVisible="{Binding TitleTemplateError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Classes="hint" Text="Если у вещи не указано название, оно сложится из характеристик. Пустые значения выпадают вместе с единицей." />
+          </StackPanel>
+
+          <!-- Унаследованные характеристики -->
+          <Border Classes="card" IsVisible="{Binding HasInheritedFields}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="От базового типа" FontWeight="SemiBold" />
+              <ItemsControl ItemsSource="{Binding InheritedFields}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="contracts:FieldDefinitionDto">
+                    <TextBlock Text="{Binding Name}" Opacity="0.75" Margin="0,2" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+          <!-- Характеристики -->
+          <Grid ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+            <TextBlock Classes="section" Text="Характеристики" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Command="{Binding AddFieldCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <ui:FASymbolIcon Symbol="Add" FontSize="14" />
+                <TextBlock Text="Добавить характеристику" />
+              </StackPanel>
+            </Button>
+          </Grid>
+          <TextBlock Classes="hint" Text="Например, у кабеля: длина, разъёмы, версия USB, цвет." IsVisible="{Binding !HasFields}" />
+
+          <ItemsControl ItemsSource="{Binding Fields}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="catalog:FieldDraftViewModel">
+                <Border Classes="card">
+                  <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,8,200,8,Auto">
+                      <TextBox Text="{Binding Name}" PlaceholderText="Название характеристики" MaxLength="100" />
+                      <ComboBox Grid.Column="2" ItemsSource="{x:Static catalog:FieldDraftViewModel.DataTypes}" SelectedItem="{Binding DataType}"
+                                HorizontalAlignment="Stretch" DisplayMemberBinding="{Binding Title, x:DataType=catalog:DataTypeOption}" />
+                      <StackPanel Grid.Column="4" Orientation="Horizontal">
+                        <ToggleButton Classes="icon" IsChecked="{Binding IsExpanded}" ToolTip.Tip="Настройки" Padding="7" Theme="{DynamicResource TransparentButton}">
+                          <ui:FASymbolIcon Symbol="Setting" FontSize="14" />
+                        </ToggleButton>
+                        <Button Classes="icon" ToolTip.Tip="Добавить в шаблон названия"
+                                Command="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).InsertIntoTemplateCommand}" CommandParameter="{Binding}">
+                          <TextBlock Text="{}{ }" FontWeight="SemiBold" FontSize="12" />
+                        </Button>
+                        <Button Classes="icon" ToolTip.Tip="Выше"
+                                Command="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).MoveFieldUpCommand}" CommandParameter="{Binding}">
+                          <ui:FASymbolIcon Symbol="ChevronUp" FontSize="14" />
+                        </Button>
+                        <Button Classes="icon" ToolTip.Tip="Ниже"
+                                Command="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).MoveFieldDownCommand}" CommandParameter="{Binding}">
+                          <ui:FASymbolIcon Symbol="ChevronDown" FontSize="14" />
+                        </Button>
+                        <Button Classes="icon" ToolTip.Tip="Убрать характеристику (у вещей значения сохранятся в архиве)"
+                                Command="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).RemoveFieldCommand}" CommandParameter="{Binding}">
+                          <ui:FASymbolIcon Symbol="Delete" FontSize="14" />
+                        </Button>
+                      </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding Summary}" FontSize="12" Opacity="0.65" IsVisible="{Binding !IsExpanded}" />
+                    <TextBlock Classes="error" Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                    <!-- Подробные настройки -->
+                    <StackPanel Spacing="10" IsVisible="{Binding IsExpanded}">
+                      <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding NeedsList}">
+                        <ComboBox ItemsSource="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).Lists}" SelectedItem="{Binding List}"
+                                  PlaceholderText="Справочник вариантов" HorizontalAlignment="Stretch"
+                                  DisplayMemberBinding="{Binding Name, x:DataType=contracts:ValueListDto}" />
+                        <Button Grid.Column="2" Content="Новый справочник…">
+                          <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                              <StackPanel Width="320" Spacing="8">
+                                <TextBox Text="{Binding NewListName}" PlaceholderText="{Binding Name, StringFormat='Название (по умолчанию «{0}»)'}" />
+                                <TextBox Text="{Binding NewListOptions}" PlaceholderText="Варианты через запятую: Type-A, Type-C, HDMI"
+                                         AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" />
+                                <Button Classes="accent" Content="Создать и выбрать" HorizontalAlignment="Right"
+                                        Command="{Binding $parent[ItemsControl].((catalog:TypeEditorViewModel)DataContext).CreateListCommand}" CommandParameter="{Binding}" />
+                              </StackPanel>
+                            </Flyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
+                      <Grid ColumnDefinitions="*,8,*,8,*,8,*" IsVisible="{Binding IsNumber}">
+                        <StackPanel>
+                          <TextBlock Classes="caption" Text="Единица" />
+                          <TextBox Text="{Binding Unit}" PlaceholderText="см, Вт, мАч" MaxLength="20" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                          <TextBlock Classes="caption" Text="Минимум" />
+                          <NumericUpDown Value="{Binding Min}" PlaceholderText="—" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                          <TextBlock Classes="caption" Text="Максимум" />
+                          <NumericUpDown Value="{Binding Max}" PlaceholderText="—" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="6" IsVisible="{Binding IsDecimal}">
+                          <TextBlock Classes="caption" Text="Знаков после запятой" />
+                          <NumericUpDown Value="{Binding Decimals}" Minimum="0" Maximum="10" FormatString="0" PlaceholderText="2" />
+                        </StackPanel>
+                      </Grid>
+                      <WrapPanel>
+                        <StackPanel Width="250" Margin="0,0,12,8">
+                          <TextBlock Classes="caption" Text="Значение для новых вещей" />
+                          <TextBox Text="{Binding DefaultValue}" />
+                        </StackPanel>
+                        <StackPanel Width="250" Margin="0,0,12,8" IsVisible="{Binding IsTextual}">
+                          <TextBlock Classes="caption" Text="Подсказка в пустом поле" />
+                          <TextBox Text="{Binding Placeholder}" />
+                        </StackPanel>
+                        <StackPanel Width="250" Margin="0,0,12,8">
+                          <TextBlock Classes="caption" Text="Группа в форме" />
+                          <TextBox Text="{Binding GroupName}" PlaceholderText="Например, «Размеры»" />
+                        </StackPanel>
+                      </WrapPanel>
+                      <WrapPanel>
+                        <CheckBox Content="Обязательная" IsChecked="{Binding IsRequired}" Margin="0,0,16,0" />
+                        <CheckBox Content="Показывать в списке" IsChecked="{Binding ShowInList}" Margin="0,0,16,0" />
+                        <CheckBox Content="Запоминать последнее значение" IsChecked="{Binding RememberLast}" ToolTip.Tip="Следующая новая вещь получит то же значение" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+
+      <GridSplitter Grid.Column="1" Width="1" Background="{DynamicResource CardStrokeColorDefaultBrush}" />
+
+      <!-- Предпросмотр формы вещи -->
+      <DockPanel Grid.Column="2" Background="{DynamicResource LayerFillColorDefaultBrush}">
+        <StackPanel DockPanel.Dock="Top" Margin="24,16,24,0" Spacing="2">
+          <TextBlock Classes="section" Text="Так будет выглядеть форма" />
+          <TextBlock Classes="hint" Text="Можно попробовать заполнить — увидите, как сложится название." />
+        </StackPanel>
+        <editorViews:ItemEditorView DataContext="{Binding Preview}" />
+      </DockPanel>
+    </Grid>
+  </DockPanel>
+</Window>

@@ -1,0 +1,206 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:catalog="using:Invy.Client.Core.Catalog"
+             xmlns:contracts="using:Invy.Contracts.Catalog"
+             xmlns:controls="using:Invy.Client.UI.Controls"
+             x:Class="Invy.Client.UI.Views.Catalog.TypesPage"
+             x:DataType="catalog:TypesViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Opacity" Value="0.65" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Opacity" Value="0.85" />
+    </Style>
+    <Style Selector="TextBlock.error">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Padding" Value="7" />
+      <Setter Property="Theme" Value="{DynamicResource TransparentButton}" />
+    </Style>
+  </UserControl.Styles>
+
+  <TabControl Margin="16,0,24,16" Padding="0,8,0,0">
+    <!-- Типы -->
+    <TabItem Header="Типы">
+      <Grid RowDefinitions="Auto,*">
+        <Grid ColumnDefinitions="*,Auto">
+          <ui:FACommandBar DefaultLabelPosition="Right" HorizontalAlignment="Left">
+            <ui:FACommandBar.PrimaryCommands>
+              <ui:FACommandBarButton Label="Новый тип" IconSource="Add" Command="{Binding NewTypeCommand}" IsVisible="{Binding CanEdit}" />
+              <ui:FACommandBarButton Label="Изменить" IconSource="Edit" Command="{Binding EditCommand}" IsVisible="{Binding CanEdit}" />
+              <ui:FACommandBarButton Label="В архив / вернуть" IconSource="SaveLocal" Command="{Binding ToggleArchiveCommand}" IsVisible="{Binding CanEdit}" />
+              <ui:FACommandBarButton Label="Удалить" IconSource="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding CanEdit}" />
+              <ui:FACommandBarSeparator IsVisible="{Binding CanEdit}" />
+              <ui:FACommandBarButton Label="Стартовый набор" IconSource="Library" Command="{Binding ApplyStarterKitCommand}" IsVisible="{Binding CanEdit}"
+                                     ToolTip.Tip="Место, Шкаф, Коробка, Пакет, Кабель, Переходник… — добавятся только недостающие" />
+            </ui:FACommandBar.PrimaryCommands>
+          </ui:FACommandBar>
+          <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowArchived}" OnContent="Архивные видны" OffContent="Архивные скрыты" VerticalAlignment="Center" />
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,6,*" Margin="0,8,0,0">
+          <Border Classes="card">
+            <Panel>
+              <ListBox x:Name="TypesList" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" Background="Transparent">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="catalog:TypeRowViewModel">
+                    <StackPanel>
+                      <TextBlock Text="{Binding GroupTitle}" IsVisible="{Binding IsGroupStart}" FontWeight="SemiBold" Opacity="0.7" Margin="0,8,0,6" />
+                      <Grid ColumnDefinitions="Auto,*" Opacity="{Binding IsArchived, Converter={x:Static BoolConverters.Not}}">
+                        <controls:ItemIcon Icon="{Binding Type.Icon}" Role="{Binding Type.Role}" Tint="{Binding Type.Color}" Size="20" Margin="0,0,12,0" />
+                        <StackPanel Grid.Column="1">
+                          <TextBlock Text="{Binding Name}" />
+                          <TextBlock Text="{Binding Subtitle}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Grid>
+                    </StackPanel>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" MaxWidth="380" Margin="24">
+                <ui:FASymbolIcon Symbol="Library" FontSize="40" Opacity="0.5" />
+                <TextBlock Text="Типов пока нет" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                <TextBlock Text="Начните со стартового набора — места, коробки, пакеты, кабели, инструменты — и меняйте под себя."
+                           TextWrapping="Wrap" TextAlignment="Center" Opacity="0.7" />
+                <Button Content="Добавить стартовый набор" Classes="accent" Command="{Binding ApplyStarterKitCommand}" HorizontalAlignment="Center" Margin="0,8,0,0" />
+              </StackPanel>
+            </Panel>
+          </Border>
+
+          <!-- Выбранный тип -->
+          <Border Grid.Column="2" Classes="card" Padding="20">
+            <Panel>
+              <TextBlock Text="Выберите тип, чтобы увидеть характеристики" IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNull}}"
+                         Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" />
+              <ScrollViewer IsVisible="{Binding Selected, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel DataContext="{Binding Selected}" x:DataType="catalog:TypeRowViewModel" Spacing="10">
+                  <StackPanel Orientation="Horizontal" Spacing="12">
+                    <controls:ItemIcon Icon="{Binding Type.Icon}" Role="{Binding Type.Role}" Tint="{Binding Type.Color}" Size="28" />
+                    <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Type.TitleTemplate, StringFormat='Название: {0}'}" IsVisible="{Binding Type.TitleTemplate, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Classes="secondary" TextWrapping="Wrap" />
+                  <ItemsControl ItemsSource="{Binding Type.Fields}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="contracts:FieldDefinitionDto">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,4" IsVisible="{Binding !IsArchived}">
+                          <TextBlock Text="{Binding Name}" />
+                          <TextBlock Grid.Column="1" Text="{Binding DataType}" Classes="secondary" />
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </ScrollViewer>
+            </Panel>
+          </Border>
+        </Grid>
+      </Grid>
+    </TabItem>
+
+    <!-- Справочники -->
+    <TabItem Header="Справочники">
+      <Grid ColumnDefinitions="280,6,*" DataContext="{Binding Lists}" x:DataType="catalog:ValueListsViewModel">
+        <Border Classes="card">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="8">
+              <Button Command="{Binding NewListCommand}" IsVisible="{Binding CanEdit}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <ui:FASymbolIcon Symbol="Add" FontSize="14" />
+                  <TextBlock Text="Новый" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding DeleteCommand}" IsVisible="{Binding CanEdit}" ToolTip.Tip="Удалить справочник">
+                <ui:FASymbolIcon Symbol="Delete" FontSize="14" />
+              </Button>
+            </StackPanel>
+            <ListBox ItemsSource="{Binding Lists}" SelectedItem="{Binding Selected}" Background="Transparent">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="contracts:ValueListDto">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}" />
+                    <TextBlock Text="{Binding Options.Count, StringFormat='Вариантов: {0}'}" Classes="secondary" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Border>
+
+        <Border Grid.Column="2" Classes="card" Padding="20">
+          <Panel>
+            <TextBlock Text="Выберите справочник или создайте новый" IsVisible="{Binding Editor, Converter={x:Static ObjectConverters.IsNull}}"
+                       Opacity="0.6" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <ScrollViewer IsVisible="{Binding Editor, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <StackPanel DataContext="{Binding Editor}" x:DataType="catalog:ValueListEditorViewModel" Spacing="12" MaxWidth="640" HorizontalAlignment="Left">
+                <StackPanel>
+                  <TextBlock Classes="caption" Text="Название" />
+                  <TextBox Text="{Binding Name}" PlaceholderText="Например, «Разъёмы»" MaxLength="100" MinWidth="320" />
+                  <TextBlock Classes="error" Text="{Binding NameError}" IsVisible="{Binding NameError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </StackPanel>
+                <TextBlock Text="{Binding UsageText}" Classes="secondary" TextWrapping="Wrap" />
+                <WrapPanel>
+                  <CheckBox Content="Можно добавлять варианты из формы вещи" IsChecked="{Binding AllowAddFromForm}" Margin="0,0,16,0" />
+                  <CheckBox Content="По алфавиту" IsChecked="{Binding IsAlphabetical}" />
+                </WrapPanel>
+
+                <TextBlock Classes="caption" Text="Варианты" />
+                <ItemsControl ItemsSource="{Binding Options}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="catalog:OptionDraftViewModel">
+                      <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4" Opacity="{Binding IsArchived, Converter={x:Static BoolConverters.Not}}">
+                        <TextBox Text="{Binding Value}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="4,0,0,0">
+                          <Button Classes="icon" ToolTip.Tip="Выше"
+                                  Command="{Binding $parent[ItemsControl].((catalog:ValueListEditorViewModel)DataContext).MoveOptionUpCommand}" CommandParameter="{Binding}">
+                            <ui:FASymbolIcon Symbol="ChevronUp" FontSize="14" />
+                          </Button>
+                          <Button Classes="icon" ToolTip.Tip="Ниже"
+                                  Command="{Binding $parent[ItemsControl].((catalog:ValueListEditorViewModel)DataContext).MoveOptionDownCommand}" CommandParameter="{Binding}">
+                            <ui:FASymbolIcon Symbol="ChevronDown" FontSize="14" />
+                          </Button>
+                          <Button Classes="icon" ToolTip.Tip="Убрать (сохранённый — в архив: у вещей значение останется; ещё раз — вернуть)"
+                                  Command="{Binding $parent[ItemsControl].((catalog:ValueListEditorViewModel)DataContext).RemoveOptionCommand}" CommandParameter="{Binding}">
+                            <ui:FASymbolIcon Symbol="Delete" FontSize="14" />
+                          </Button>
+                        </StackPanel>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Grid ColumnDefinitions="*,8,Auto">
+                  <TextBox Text="{Binding NewOptionText}" PlaceholderText="Новые варианты через запятую">
+                    <TextBox.KeyBindings>
+                      <KeyBinding Gesture="Enter" Command="{Binding AddOptionCommand}" />
+                    </TextBox.KeyBindings>
+                  </TextBox>
+                  <Button Grid.Column="2" Content="Добавить" Command="{Binding AddOptionCommand}" />
+                </Grid>
+
+                <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,8,0,0">
+                  <Button Classes="accent" Content="Сохранить справочник" Command="{Binding SaveCommand}" />
+                  <TextBlock Text="Есть несохранённые изменения" Classes="secondary" VerticalAlignment="Center" IsVisible="{Binding IsDirty}" />
+                </StackPanel>
+                <TextBlock Classes="error" Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              </StackPanel>
+            </ScrollViewer>
+          </Panel>
+        </Border>
+      </Grid>
+    </TabItem>
+  </TabControl>
+</UserControl>

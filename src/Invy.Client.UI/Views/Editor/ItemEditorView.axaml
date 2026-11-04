@@ -172,59 +172,7 @@
           <Button.Flyout>
             <Flyout Placement="BottomEdgeAlignedRight">
               <StackPanel Width="392" Spacing="8">
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="Иконка и цвет" FontWeight="SemiBold" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Content="Как у типа" Command="{Binding ResetLookCommand}" IsEnabled="{Binding HasOwnLook}" />
-                </Grid>
-                <TextBlock Classes="caption" Text="Эмодзи" />
-                <ScrollViewer MaxHeight="164">
-                  <ItemsControl ItemsSource="{x:Static editor:IconChoices.Emojis}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <WrapPanel />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="sys:String">
-                        <Button Classes="pick" Content="{Binding}" FontSize="18"
-                                Command="{Binding $parent[ItemsControl].((editor:ItemEditorViewModel)DataContext).SetEmojiCommand}"
-                                CommandParameter="{Binding}" />
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </ScrollViewer>
-                <TextBlock Classes="caption" Text="Символы" />
-                <ItemsControl ItemsSource="{x:Static editor:IconChoices.Symbols}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <WrapPanel />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="sys:String">
-                      <Button Classes="pick" ToolTip.Tip="{Binding}"
-                              Command="{Binding $parent[ItemsControl].((editor:ItemEditorViewModel)DataContext).SetSymbolCommand}"
-                              CommandParameter="{Binding}">
-                        <ui:FASymbolIcon Symbol="{Binding Converter={x:Static conv:FluentSymbolConverter.Instance}}" FontSize="18" />
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <TextBlock Classes="caption" Text="Цвет" />
-                <ItemsControl ItemsSource="{x:Static editor:IconChoices.Colors}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <WrapPanel />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="sys:String">
-                      <Button Classes="swatch" Background="{Binding Converter={x:Static conv:ColorConverters.Brush}}" ToolTip.Tip="{Binding}"
-                              Command="{Binding $parent[ItemsControl].((editor:ItemEditorViewModel)DataContext).SetColorCommand}"
-                              CommandParameter="{Binding}" />
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <controls:IconPickerPanel />
                 <StackPanel Spacing="8" IsVisible="{Binding Photos.HasPhotos}">
                   <TextBlock Classes="caption" Text="Из фото вещи" />
                   <ItemsControl ItemsSource="{Binding Photos.Photos}">

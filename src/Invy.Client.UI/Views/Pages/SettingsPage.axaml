@@ -13,6 +13,15 @@
         </ui:FASettingsExpander.Footer>
       </ui:FASettingsExpander>
 
+      <StackPanel Spacing="4" IsVisible="{Binding IsConnected}">
+        <TextBlock Text="Сервер" FontWeight="SemiBold" Margin="0,16,0,8" />
+        <ui:FASettingsExpander Header="Подключено" Description="{Binding ConnectionText}" IconSource="Globe">
+          <ui:FASettingsExpander.Footer>
+            <Button Content="Сменить сервер" Command="{Binding DisconnectCommand}" />
+          </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
+      </StackPanel>
+
       <StackPanel Spacing="4" IsVisible="{Binding HasUpdater}">
         <TextBlock Text="Подключение и обновления" FontWeight="SemiBold" Margin="0,16,0,8" />
         <ui:FASettingsExpander Header="Сервер Invy" Description="Адрес в домашней сети, например 192.168.1.10" IconSource="Globe">

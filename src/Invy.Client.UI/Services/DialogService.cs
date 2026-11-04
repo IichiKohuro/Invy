@@ -5,12 +5,15 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using Invy.Client.Core.Catalog;
 using Invy.Client.Core.Editor;
 using Invy.Client.Core.Explorer;
 using Invy.Client.Core.Session;
 using Invy.Client.Core.Shell;
+using Invy.Client.UI.Views.Catalog;
 using Invy.Client.UI.Views.Editor;
 using Invy.Client.UI.Views.Explorer;
+using Invy.Contracts.Catalog;
 using Invy.Contracts.Items;
 
 namespace Invy.Client.UI.Services;
@@ -47,22 +50,32 @@ public sealed class DialogService(ShellViewModel shell, Func<Window?>? host = nu
 
     public async Task<ItemDetailsDto?> EditItemAsync(ItemEditorViewModel editor)
     {
-        var window = new ItemEditorWindow { DataContext = editor };
+        await ShowWindowAsync(new ItemEditorWindow { DataContext = editor });
+        return editor.Result;
+    }
+
+    /// <summary>Модально над активным окном; если окна нет (быстрое добавление из трея) — само по себе.</summary>
+    private async Task ShowWindowAsync(Window window)
+    {
         if (ActiveWindow() is Window { IsVisible: true } owner)
         {
             await window.ShowDialog(owner);
-        }
-        else
-        {
-            // Быстрое добавление из трея: главное окно может быть скрыто.
-            var closed = new TaskCompletionSource();
-            window.Closed += (_, _) => closed.TrySetResult();
-            window.ShowInTaskbar = true;
-            window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            window.Show();
-            await closed.Task;
+            return;
         }
 
+        var closed = new TaskCompletionSource();
+        window.Closed += (_, _) => closed.TrySetResult();
+        window.ShowInTaskbar = true;
+        window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        window.Show();
+        window.Activate();
+        await closed.Task;
+    }
+
+    public async Task<ItemTypeDto?> EditTypeAsync(TypeEditorViewModel editor)
+    {
+        var window = new TypeEditorWindow { DataContext = editor };
+        await ShowWindowAsync(window);
         return editor.Result;
     }
 

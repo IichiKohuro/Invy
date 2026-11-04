@@ -112,6 +112,10 @@ public sealed class InvyApiClient(HttpClient http)
 
     public Task DeleteTagAsync(Guid id, CancellationToken ct = default) => SendAsync(HttpMethod.Delete, $"api/v1/tags/{id}", ct);
 
+    /// <summary>Вещи тега <paramref name="id"/> получают тег <paramref name="targetTagId"/>, исходный тег удаляется.</summary>
+    public Task<TagDto> MergeTagAsync(Guid id, Guid targetTagId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"api/v1/tags/{id}/merge", new MergeTagRequest(targetTagId), Json.MergeTagRequest, Json.TagDto, ct);
+
     public Task<IReadOnlyList<string>> SuggestAsync(Guid fieldId, string prefix, int take = 10, CancellationToken ct = default) =>
         GetAsync($"api/v1/fields/{fieldId}/suggest?q={Uri.EscapeDataString(prefix)}&take={take}", Json.IReadOnlyListString, ct);
 

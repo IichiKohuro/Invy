@@ -3,10 +3,14 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Invy.Client.Core.Connection;
+using Invy.Client.Core.Editor;
+using Invy.Client.Core.Session;
 using Invy.Client.Core.Shell;
 using Invy.Client.Core.Updates;
 using Invy.Client.UI;
 using Invy.Client.UI.Views;
+using Invy.Contracts.Devices;
 using Invy.Desktop.Hotkeys;
 using Invy.Desktop.Updates;
 using Invy.Desktop.Views;
@@ -26,6 +30,18 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
 
     public string DefaultServerAddress => serverUrl.ToString();
 
+    public ISettingsStore Settings { get; } = new JsonFileSettingsStore(Path.Combine(AppDataDirectory(Environment.SpecialFolder.ApplicationData), "settings.json"));
+
+    public ITokenProtector TokenProtector { get; } = DpapiTokenProtector.ForCurrentPlatform();
+
+    public DevicePlatform Platform => OperatingSystem.IsWindows() ? DevicePlatform.Windows : DevicePlatform.Other;
+
+    public string DeviceName => Environment.MachineName;
+
+    public string AppVersion => _updates.CurrentVersion;
+
+    public string PhotoCacheDirectory { get; } = Path.Combine(AppDataDirectory(Environment.SpecialFolder.LocalApplicationData), "cache", "photos");
+
     public const string QuickSearchHotKey = "Ctrl+Alt+I";
     public const string QuickAddHotKey = "Ctrl+Alt+N";
 
@@ -33,7 +49,9 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
     private const int QuickAddHotKeyId = 2;
 
     private IClassicDesktopStyleApplicationLifetime? _lifetime;
+    private App? _app;
     private ShellViewModel? _shell;
+    private NativeMenuItem? _serverItem;
     private MainWindow? _mainWindow;
     private QuickSearchWindow? _quickSearch;
     private TrayIcon? _trayIcon;
@@ -51,7 +69,12 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         }
 
         _lifetime = lifetime;
+        _app = app;
         _shell = shell;
+        if (app.Connector is { } connector)
+        {
+            connector.SessionChanged += session => Dispatcher.UIThread.Post(() => UpdateServerItem(session));
+        }
 
         // Закрытие окна не завершает приложение: оно остаётся в трее до «Выход».
         lifetime.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -104,6 +127,31 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         }
 
         _quickSearch.ShowAndFocus();
+    }
+
+    /// <summary>Быстро добавить вещь (Ctrl+Alt+N, трей): редактор в последнее место, даже если главное окно скрыто.</summary>
+    public async Task QuickAddAsync()
+    {
+        if (_app?.Connector?.Session is not { CanEdit: true } session)
+        {
+            ShowMainWindow();
+            return;
+        }
+
+        MoveTarget? place = null;
+        if (session.Settings.Current.RecentPlaceIds is [var recent, ..])
+        {
+            await session.TryAsync(async () =>
+            {
+                var item = await session.Api.GetItemAsync(recent);
+                if (!item.IsDeleted)
+                {
+                    place = new MoveTarget(item.Id, string.Join(" › ", item.Path.Select(p => p.Name).Append(item.Name)));
+                }
+            });
+        }
+
+        await session.Dialogs.EditItemAsync(ItemEditorViewModel.ForNew(session, place));
     }
 
     public void Exit()
@@ -166,10 +214,11 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
     {
         var menu = new NativeMenu();
         menu.Items.Add(new NativeMenuItem($"Найти…  ({QuickSearchHotKey})") { Command = new RelayCommand(ShowQuickSearch) });
-        menu.Items.Add(new NativeMenuItem($"Добавить вещь…  ({QuickAddHotKey})") { Command = new RelayCommand(ShowMainWindow) });
+        menu.Items.Add(new NativeMenuItem($"Добавить вещь…  ({QuickAddHotKey})") { Command = new AsyncRelayCommand(QuickAddAsync) });
         menu.Items.Add(new NativeMenuItem("Открыть Invy") { Command = new RelayCommand(ShowMainWindow) });
         menu.Items.Add(new NativeMenuItemSeparator());
-        menu.Items.Add(new NativeMenuItem("Сервер: нет подключения") { IsEnabled = false });
+        _serverItem = new NativeMenuItem("Сервер: нет подключения") { IsEnabled = false };
+        menu.Items.Add(_serverItem);
         _updateItem = new NativeMenuItem("Проверить обновления") { Command = new AsyncRelayCommand(CheckForUpdatesAsync) };
         menu.Items.Add(_updateItem);
         menu.Items.Add(new NativeMenuItemSeparator());
@@ -204,7 +253,7 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
         item.IsEnabled = false;
         try
         {
-            var version = await _updates.CheckAndDownloadAsync(serverUrl);
+            var version = await _updates.CheckAndDownloadAsync(_app?.Connector?.Connection.ServerUrl ?? serverUrl);
             item.Header = version is null ? "Обновлений нет — проверить снова" : $"Установить {version} и перезапустить";
         }
 #pragma warning disable CA1031 // любая ошибка проверки обновлений не должна ронять приложение
@@ -246,9 +295,19 @@ internal sealed class DesktopHost(SingleInstance instance, DesktopArguments star
             }
             else if (id == QuickAddHotKeyId)
             {
-                ShowMainWindow();
+                _ = QuickAddAsync();
             }
         });
         _hotKeys = service;
     }
+
+    private void UpdateServerItem(ClientSession? session)
+    {
+        if (_serverItem is not null)
+        {
+            _serverItem.Header = session?.Connection.Server is { } server ? $"Сервер: «{server.Name}» — подключено" : "Сервер: нет подключения";
+        }
+    }
+
+    private static string AppDataDirectory(Environment.SpecialFolder folder) => Path.Combine(Environment.GetFolderPath(folder), "Invy");
 }

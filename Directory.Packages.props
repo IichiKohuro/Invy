@@ -21,6 +21,8 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="$(MicrosoftExtensionsVersion)" />
+    <!-- Desktop: токен устройства шифруется DPAPI (привязан к пользователю Windows) -->
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="$(MicrosoftExtensionsVersion)" />

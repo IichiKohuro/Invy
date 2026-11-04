@@ -17,7 +17,7 @@ namespace Invy.Client.Core.Editor;
 /// Редактор вещи: тип, название (своё или авто по шаблону типа), где лежит, количество, характеристики типа и теги.
 /// Ошибки сервера (422) показываются у своих полей, конфликт версий (409) — вопросом «чьи изменения оставить».
 /// </summary>
-public sealed partial class ItemEditorViewModel : ObservableObject
+public sealed partial class ItemEditorViewModel : ObservableObject, ILookEditor
 {
     private readonly ClientSession _session;
     private ItemDetailsDto? _item;
@@ -53,6 +53,26 @@ public sealed partial class ItemEditorViewModel : ObservableObject
         var editor = new ItemEditorViewModel(session);
         editor.Load(item);
         return editor;
+    }
+
+    /// <summary>Предпросмотр формы в конструкторе типов: только этот тип, без сохранения.</summary>
+    public static ItemEditorViewModel ForPreview(ClientSession session, ItemTypeDto type)
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        var editor = new ItemEditorViewModel(session) { IsPreview = true };
+        editor.ShowPreviewType(type);
+        return editor;
+    }
+
+    public bool IsPreview { get; private init; }
+
+    /// <summary>Тип в предпросмотре изменился: поля пересобираются, введённые значения сохраняются.</summary>
+    public void ShowPreviewType(ItemTypeDto type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        Types.Clear();
+        Types.Add(type);
+        SelectedType = type;
     }
 
     public bool IsNew => _item is null;
@@ -157,6 +177,11 @@ public sealed partial class ItemEditorViewModel : ObservableObject
     /// <summary>Сохранить. Возвращает вещь или <c>null</c>, если есть ошибки — они показаны у полей.</summary>
     public async Task<ItemDetailsDto?> TrySaveAsync()
     {
+        if (IsPreview)
+        {
+            return null;
+        }
+
         ClearErrors();
         SavedMessage = null;
         if (SelectedType is not { } type)

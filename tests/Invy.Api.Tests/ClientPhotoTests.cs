@@ -197,6 +197,8 @@ public sealed class ClientPhotoTests : IAsyncLifetime
 
         public Task<ItemDetailsDto?> EditItemAsync(ItemEditorViewModel editor) => editor.TrySaveAsync();
 
+        public Task<ItemTypeDto?> EditTypeAsync(Invy.Client.Core.Catalog.TypeEditorViewModel editor) => editor.TrySaveAsync();
+
         public Task<MoveTarget?> PickLocationAsync(string title, ClientSession session) => Task.FromResult<MoveTarget?>(null);
 
         public Task<IReadOnlyList<PickedFile>> PickImagesAsync() => Task.FromResult<IReadOnlyList<PickedFile>>([]);

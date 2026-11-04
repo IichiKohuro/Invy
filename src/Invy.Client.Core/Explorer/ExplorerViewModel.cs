@@ -3,6 +3,7 @@ using System.Net;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Invy.Client.Core.Api;
+using Invy.Client.Core.Catalog;
 using Invy.Client.Core.Editor;
 using Invy.Client.Core.Photos;
 using Invy.Client.Core.Session;
@@ -49,6 +50,7 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
         _mode = mode;
         Breadcrumbs.Add(new Breadcrumb(null, Title));
         session.Changed += OnChanged;
+        session.Catalog.Changed += OnCatalogChanged;
     }
 
     public override string Title => _mode == ExplorerMode.Places ? "Места" : "Неразобранное";
@@ -119,6 +121,9 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
     public bool HasCut => CutText is not null;
 
     public string AddText => IsAtRoot && _mode == ExplorerMode.Places ? "Добавить место" : "Добавить";
+
+    /// <summary>Типов ещё нет — предложить стартовый набор (Место, Коробка, Кабель…).</summary>
+    public bool NeedsStarterKit => CanEdit && !_session.Catalog.ActiveTypes.Any();
 
     public string EmptyTitle => (IsAtRoot, _mode) switch
     {
@@ -300,7 +305,16 @@ public sealed partial class ExplorerViewModel : PageViewModel, IDisposable
     /// <summary>Куда добавлять фото из буфера: выбранная вещь или текущее место.</summary>
     public Guid? PhotoTargetId => SelectedItem?.Id ?? CurrentId;
 
-    public void Dispose() => _session.Changed -= OnChanged;
+    public void Dispose()
+    {
+        _session.Changed -= OnChanged;
+        _session.Catalog.Changed -= OnCatalogChanged;
+    }
+
+    [RelayCommand]
+    private Task ApplyStarterKitAsync() => StarterKit.ApplyAsync(_session);
+
+    private void OnCatalogChanged() => OnPropertyChanged(nameof(NeedsStarterKit));
 
     [RelayCommand]
     private async Task OpenAsync(ItemRowViewModel? row)

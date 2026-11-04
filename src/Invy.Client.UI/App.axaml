@@ -6,6 +6,8 @@
              xmlns:views="using:Invy.Client.UI.Views.Pages"
              xmlns:explorer="using:Invy.Client.Core.Explorer"
              xmlns:explorerViews="using:Invy.Client.UI.Views.Explorer"
+             xmlns:catalog="using:Invy.Client.Core.Catalog"
+             xmlns:catalogViews="using:Invy.Client.UI.Views.Catalog"
              x:Class="Invy.Client.UI.App"
              Name="Invy"
              RequestedThemeVariant="Default">
@@ -21,6 +23,12 @@
     </DataTemplate>
     <DataTemplate DataType="explorer:ExplorerViewModel">
       <explorerViews:ExplorerPage />
+    </DataTemplate>
+    <DataTemplate DataType="catalog:TypesViewModel">
+      <catalogViews:TypesPage />
+    </DataTemplate>
+    <DataTemplate DataType="catalog:TagsViewModel">
+      <catalogViews:TagsPage />
     </DataTemplate>
     <DataTemplate DataType="pages:SettingsPageViewModel">
       <views:SettingsPage />

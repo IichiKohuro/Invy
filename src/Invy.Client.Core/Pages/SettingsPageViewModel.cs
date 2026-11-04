@@ -10,10 +10,13 @@ public sealed partial class SettingsPageViewModel : PageViewModel
     private readonly IThemeService _themeService;
     private readonly IAppUpdater? _updater;
 
-    public SettingsPageViewModel(IThemeService themeService, IAppUpdater? updater = null, string? serverAddress = null)
+    private readonly ShellViewModel? _shell;
+
+    public SettingsPageViewModel(IThemeService themeService, IAppUpdater? updater = null, string? serverAddress = null, ShellViewModel? shell = null)
     {
         _themeService = themeService;
         _updater = updater;
+        _shell = shell;
         ThemeIndex = (int)themeService.Mode;
         ServerAddress = serverAddress ?? string.Empty;
         UpdateStatus = updater switch
@@ -45,6 +48,23 @@ public sealed partial class SettingsPageViewModel : PageViewModel
     public partial string? ReadyVersion { get; private set; }
 
     public bool HasUpdater => _updater is not null;
+
+    /// <summary>«Сервер «Дом» — http://192.168.1.10:5470/, это устройство: администратор».</summary>
+    public string? ConnectionText => _shell?.Session?.Connection is { Server: { } server, Me: { } me } connection
+        ? $"«{server.Name}» — {connection.ServerUrl}. Это устройство: {RoleName(me.Role)}"
+        : null;
+
+    public bool IsConnected => _shell?.Session is not null;
+
+    [RelayCommand]
+    private void Disconnect() => _shell?.DisconnectCommand.Execute(null);
+
+    private static string RoleName(Contracts.Devices.DeviceRole role) => role switch
+    {
+        Contracts.Devices.DeviceRole.Admin => "администратор",
+        Contracts.Devices.DeviceRole.Editor => "может изменять",
+        _ => "только просмотр",
+    };
 
     partial void OnThemeIndexChanged(int value)
     {

@@ -3,6 +3,7 @@ using Invy.Client.Core.Catalog;
 using Invy.Client.Core.Connection;
 using Invy.Client.Core.Editor;
 using Invy.Client.Core.Photos;
+using Invy.Contracts.Catalog;
 using Invy.Contracts.Items;
 using Invy.Contracts.Sync;
 
@@ -37,6 +38,9 @@ public interface IDialogService
     /// <summary>Редактор вещи в диалоге; результат — сохранённая вещь или <c>null</c>, если отменено.</summary>
     Task<ItemDetailsDto?> EditItemAsync(ItemEditorViewModel editor);
 
+    /// <summary>Конструктор типа в диалоге; результат — сохранённый тип или <c>null</c>.</summary>
+    Task<ItemTypeDto?> EditTypeAsync(TypeEditorViewModel editor);
+
     Task<MoveTarget?> PickLocationAsync(string title, ClientSession session);
 
     Task<IReadOnlyList<PickedFile>> PickImagesAsync();
@@ -59,6 +63,10 @@ public sealed class ClientSession(
     : IAsyncDisposable
 {
     private readonly Dictionary<Guid, FieldValueDto> _rememberedValues = [];
+    private readonly CancellationTokenSource _stopping = new();
+
+    /// <summary>Пауза между попытками поднять канал реального времени.</summary>
+    public TimeSpan RealtimeRetryDelay { get; init; } = TimeSpan.FromSeconds(15);
 
     public event Action<ChangeBatch>? Changed;
 
@@ -81,11 +89,19 @@ public sealed class ClientSession(
 
     public bool CanEdit => Connection.CanEdit;
 
+    /// <summary>
+    /// Загрузить справочники и подписаться на изменения. Если канал реального времени не поднялся
+    /// (например, прокси режет WebSocket), работаем без него и пробуем снова в фоне.
+    /// </summary>
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         await Catalog.LoadAsync(Api, cancellationToken);
         Realtime.ChangesReceived += OnChanges;
-        await Realtime.StartAsync(Connection, cancellationToken);
+        if (!await TryStartRealtimeAsync(cancellationToken))
+        {
+            Dialogs.Notify("Изменения с других устройств пока не приходят сами — нажмите «Обновить». Подключение повторится автоматически.", NotifyKind.Warning);
+            _ = RetryRealtimeAsync(_stopping.Token);
+        }
     }
 
     /// <summary>Недавние типы — первыми в списке выбора.</summary>
@@ -122,8 +138,50 @@ public sealed class ClientSession(
 
     public async ValueTask DisposeAsync()
     {
+        await _stopping.CancelAsync();
         Realtime.ChangesReceived -= OnChanges;
         await Realtime.DisposeAsync();
+        _stopping.Dispose();
+    }
+
+    private async Task<bool> TryStartRealtimeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Realtime.StartAsync(Connection, cancellationToken);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031 // SignalR бросает разные исключения транспорта — любое значит «пока без реального времени»
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            await Realtime.StopAsync();
+            return false;
+        }
+    }
+
+    private async Task RetryRealtimeAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(RealtimeRetryDelay, cancellationToken);
+                if (await TryStartRealtimeAsync(cancellationToken))
+                {
+                    Dialogs.Notify("Изменения с других устройств снова приходят сами", NotifyKind.Success);
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // сеанс закрыт
+        }
     }
 
     private async void OnChanges(ChangeBatch batch)

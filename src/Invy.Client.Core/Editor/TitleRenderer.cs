@@ -47,10 +47,20 @@ public static partial class TitleRenderer
         return collapsed.Any(char.IsLetterOrDigit) ? collapsed : null;
     }
 
+    /// <summary>Имена полей, упомянутые в шаблоне.</summary>
+    public static IReadOnlyList<string> FieldNames(string? template) =>
+        string.IsNullOrEmpty(template) ? [] : FieldName().Matches(template).Select(m => m.Groups[1].Value.Trim()).ToList();
+
+    /// <summary>Совпадают ли имена полей по правилам шаблона (регистр, «ё», пробелы).</summary>
+    public static bool SameName(string a, string b) => Normalize(a) == Normalize(b);
+
     private static string Normalize(string name) => Spaces().Replace(name.Trim(), " ").ToLowerInvariant().Replace('ё', 'е');
 
     [GeneratedRegex(@"\{([^{}]+)\}([^{},;|/→–—-]*)")]
     private static partial Regex Placeholder();
+
+    [GeneratedRegex(@"\{([^{}]+)\}")]
+    private static partial Regex FieldName();
 
     [GeneratedRegex(@"(\s*[,;|/→–—-]\s*){2,}")]
     private static partial Regex SeparatorRun();

@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:catalog="using:Invy.Client.Core.Catalog"
+             xmlns:editor="using:Invy.Client.Core.Editor"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             xmlns:sys="using:System"
+             x:Class="Invy.Client.UI.Views.Catalog.TagsPage"
+             x:DataType="catalog:TagsViewModel">
+  <UserControl.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundFillColorDefaultBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Padding" Value="7" />
+      <Setter Property="Theme" Value="{DynamicResource TransparentButton}" />
+    </Style>
+    <Style Selector="Button.swatch">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="Auto,Auto,*" Margin="24,4,24,24" MaxWidth="880" HorizontalAlignment="Left">
+    <Grid ColumnDefinitions="*,8,Auto" IsVisible="{Binding CanEdit}" MaxWidth="520" HorizontalAlignment="Left">
+      <TextBox Text="{Binding NewTagName}" PlaceholderText="Новый тег, например «зарядка»" MinWidth="320">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding CreateCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Grid.Column="2" Classes="accent" Content="Добавить" Command="{Binding CreateCommand}" />
+    </Grid>
+    <TextBlock Grid.Row="1" Text="{Binding Error}" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+               Foreground="{DynamicResource SystemFillColorCriticalBrush}" Margin="0,6,0,0" />
+
+    <Border Grid.Row="2" Classes="card" Margin="0,12,0,0">
+      <Panel>
+        <ItemsControl ItemsSource="{Binding Tags}" Margin="8">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="catalog:TagRowViewModel">
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="4,2" MinHeight="40">
+                <Ellipse Width="12" Height="12" Margin="4,0,12,0" VerticalAlignment="Center"
+                         Fill="{Binding Color, Converter={x:Static conv:ColorConverters.Brush}}"
+                         Stroke="{DynamicResource CardStrokeColorDefaultBrush}" StrokeThickness="1" />
+                <TextBlock Grid.Column="1" Text="{Binding Name, StringFormat='#{0}'}" VerticalAlignment="Center" IsVisible="{Binding !IsEditing}" />
+                <TextBox Grid.Column="1" Text="{Binding EditName}" IsVisible="{Binding IsEditing}" MaxWidth="320" HorizontalAlignment="Left" MinWidth="220">
+                  <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding $parent[ItemsControl].((catalog:TagsViewModel)DataContext).RenameCommand}" CommandParameter="{Binding}" />
+                    <KeyBinding Gesture="Escape" Command="{Binding $parent[ItemsControl].((catalog:TagsViewModel)DataContext).CancelRenameCommand}" CommandParameter="{Binding}" />
+                  </TextBox.KeyBindings>
+                </TextBox>
+                <TextBlock Grid.Column="2" Text="{Binding CountText}" Opacity="0.65" FontSize="12" VerticalAlignment="Center" Margin="12,0" />
+                <StackPanel Grid.Column="3" Orientation="Horizontal" IsVisible="{Binding $parent[ItemsControl].((catalog:TagsViewModel)DataContext).CanEdit}">
+                  <Button Classes="icon" ToolTip.Tip="Переименовать"
+                          Command="{Binding $parent[ItemsControl].((catalog:TagsViewModel)DataContext).BeginRenameCommand}" CommandParameter="{Binding}">
+                    <ui:FASymbolIcon Symbol="Rename" FontSize="14" />
+                  </Button>
+                  <Button Classes="icon" ToolTip.Tip="Цвет" Tag="{Binding}" Click="OnColorClick">
+                    <ui:FASymbolIcon Symbol="ColorFill" FontSize="14" />
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedRight">
+                        <StackPanel Spacing="8" Width="260">
+                          <ItemsControl ItemsSource="{x:Static editor:IconChoices.Colors}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="sys:String">
+                                <Button Classes="swatch" Background="{Binding Converter={x:Static conv:ColorConverters.Brush}}"
+                                        Command="{Binding $parent[UserControl].((catalog:TagsViewModel)DataContext).SetColorCommand}" CommandParameter="{Binding}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                          <Button Content="Без цвета" Command="{Binding $parent[UserControl].((catalog:TagsViewModel)DataContext).SetColorCommand}" />
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
+                  <Button Classes="icon" ToolTip.Tip="Объединить с другим тегом" IsEnabled="{Binding CanMerge}">
+                    <ui:FASymbolIcon Symbol="Link" FontSize="14" />
+                    <Button.Flyout>
+                      <MenuFlyout ItemsSource="{Binding MergeOptions}">
+                        <MenuFlyout.ItemContainerTheme>
+                          <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}" x:DataType="catalog:TagMergeOption">
+                            <Setter Property="Header" Value="{Binding Title}" />
+                            <Setter Property="Command" Value="{Binding $parent[UserControl].((catalog:TagsViewModel)DataContext).MergeCommand}" />
+                            <Setter Property="CommandParameter" Value="{Binding}" />
+                          </ControlTheme>
+                        </MenuFlyout.ItemContainerTheme>
+                      </MenuFlyout>
+                    </Button.Flyout>
+                  </Button>
+                  <Button Classes="icon" ToolTip.Tip="Удалить тег"
+                          Command="{Binding $parent[ItemsControl].((catalog:TagsViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}">
+                    <ui:FASymbolIcon Symbol="Delete" FontSize="14" />
+                  </Button>
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="24">
+          <ui:FASymbolIcon Symbol="Tag" FontSize="40" Opacity="0.5" />
+          <TextBlock Text="Тегов пока нет" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock Text="Теги объединяют вещи из разных мест: «зарядка», «в ремонт», «отдать»." Opacity="0.7" TextWrapping="Wrap" TextAlignment="Center" />
+        </StackPanel>
+      </Panel>
+    </Border>
+  </Grid>
+</UserControl>

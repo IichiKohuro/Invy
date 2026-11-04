@@ -3,6 +3,7 @@
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:shell="using:Invy.Client.Core.Shell"
              xmlns:conv="using:Invy.Client.UI.Converters"
+             xmlns:connectionViews="using:Invy.Client.UI.Views.Connection"
              x:Class="Invy.Client.UI.Views.MainView"
              x:DataType="shell:ShellViewModel">
   <UserControl.Resources>
@@ -12,7 +13,8 @@
 
   <Panel>
     <!-- Боковая навигация в стиле Windows 11; на узком экране (Android) сворачивается в «гамбургер» -->
-    <ui:FANavigationView MenuItemsSource="{Binding MenuItems}"
+    <ui:FANavigationView IsVisible="{Binding !ShowConnect}"
+                         MenuItemsSource="{Binding MenuItems}"
                          FooterMenuItemsSource="{Binding FooterItems}"
                          SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
                          Header="{Binding CurrentPage.Title, FallbackValue={x:Null}}"
@@ -29,6 +31,11 @@
         </DataTemplate>
       </ui:FANavigationView.MenuItemTemplate>
     </ui:FANavigationView>
+
+    <!-- Нет подключения к серверу — экран подключения вместо разделов -->
+    <Panel IsVisible="{Binding ShowConnect}">
+      <connectionViews:ConnectView DataContext="{Binding Connect}" />
+    </Panel>
 
     <!-- Уведомления: «Перемещено», «Нет связи с сервером» — внизу по центру, исчезают сами -->
     <ui:FAInfoBar x:Name="NoticeBar"

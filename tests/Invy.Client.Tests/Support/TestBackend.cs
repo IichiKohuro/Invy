@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace Invy.Client.Tests.Support;
 
 /// <summary>Сервер Invy в памяти («Доверенная сеть») и подключённый к нему сеанс клиента с настоящими диалогами.</summary>
-public sealed class TestBackend : WebApplicationFactory<global::Program>
+/// <param name="authMode">«TrustedLan» — без сопряжения; «Pairing» — новые устройства ждут подтверждения.</param>
+public sealed class TestBackend(string authMode = "TrustedLan") : WebApplicationFactory<global::Program>
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
@@ -21,11 +22,18 @@ public sealed class TestBackend : WebApplicationFactory<global::Program>
     /// <summary>Окно, над которым показываются диалоги (в headless нет списка окон приложения).</summary>
     public Avalonia.Controls.Window? Host { get; set; }
 
+    /// <summary>Подключение клиента к этому серверу (ещё не подключено).</summary>
+    public ServerConnection NewConnection(ISettingsStore? settings = null, string deviceName = "Тест") =>
+        new(settings ?? new InMemorySettingsStore(), new PlainTokenProtector(), () => Server.CreateHandler(), deviceName, DevicePlatform.Windows, "0.2.0")
+        {
+            PairingPollInterval = TimeSpan.FromMilliseconds(100),
+        };
+
     /// <summary>Подключиться, добавить стартовый набор и создать сеанс для оболочки.</summary>
     public async Task<ClientSession> ConnectAsync(ShellViewModel shell)
     {
         var settings = new InMemorySettingsStore();
-        var connection = new ServerConnection(settings, new PlainTokenProtector(), () => Server.CreateHandler(), "Тест", DevicePlatform.Windows, "0.2.0");
+        var connection = NewConnection(settings);
         if (!await connection.ConnectAsync(Server.BaseAddress))
         {
             throw new InvalidOperationException(connection.Error);
@@ -59,7 +67,7 @@ public sealed class TestBackend : WebApplicationFactory<global::Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSetting("Invy:DataPath", _dataPath);
-        builder.UseSetting("Invy:Auth:Mode", "TrustedLan");
+        builder.UseSetting("Invy:Auth:Mode", authMode);
     }
 
     public override async ValueTask DisposeAsync()

@@ -1,4 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Invy.Client.Core.Catalog;
+using Invy.Client.Core.Connection;
 using Invy.Client.Core.Explorer;
 using Invy.Client.Core.Pages;
 using Invy.Client.Core.Session;
@@ -47,7 +50,21 @@ public sealed partial class ShellViewModel : ObservableObject
 
     /// <summary>Сеанс работы с сервером; <c>null</c> — ещё не подключились.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsConnected), nameof(ShowConnect))]
     public partial ClientSession? Session { get; private set; }
+
+    /// <summary>Экран подключения (адрес, код сопряжения); задаёт хост приложения.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowConnect))]
+    public partial ConnectViewModel? Connect { get; set; }
+
+    public bool IsConnected => Session is not null;
+
+    /// <summary>Показывать экран подключения вместо разделов.</summary>
+    public bool ShowConnect => Session is null && Connect is not null;
+
+    /// <summary>Отключиться и выбрать другой сервер; хост закрывает сеанс.</summary>
+    public event Action? DisconnectRequested;
 
     [ObservableProperty]
     public partial NavigationItem? SelectedItem { get; set; }
@@ -76,6 +93,9 @@ public sealed partial class ShellViewModel : ObservableObject
     }
 
     public void ShowNotice(string message, NotifyKind kind = NotifyKind.Info) => Notice = new Notice(message, kind);
+
+    [RelayCommand]
+    private void Disconnect() => DisconnectRequested?.Invoke();
 
     partial void OnSelectedItemChanged(NavigationItem? value) =>
         CurrentPage = value is null ? null : GetOrCreatePage(value);
@@ -107,10 +127,12 @@ public sealed partial class ShellViewModel : ObservableObject
             page = item.Key switch
             {
                 "home" => new HomePageViewModel(),
-                "settings" => new SettingsPageViewModel(_themeService, _updater, _serverAddress),
+                "settings" => new SettingsPageViewModel(_themeService, _updater, Session?.Connection.ServerUrl?.ToString() ?? _serverAddress, this),
                 "places" when Session is not null => new ExplorerViewModel(Session, ExplorerMode.Places),
                 "unsorted" when Session is not null => new ExplorerViewModel(Session, ExplorerMode.Unsorted),
-                "places" or "unsorted" => new PlaceholderPageViewModel(item.Title, "Нет подключения к серверу Invy."),
+                "types" when Session is not null => new TypesViewModel(Session),
+                "tags" when Session is not null => new TagsViewModel(Session),
+                "places" or "unsorted" or "types" or "tags" => new PlaceholderPageViewModel(item.Title, "Нет подключения к серверу Invy."),
                 _ => new PlaceholderPageViewModel(item.Title, "Раздел появится в следующих фазах — см. PLAN.md."),
             };
             _pages[item.Key] = page;

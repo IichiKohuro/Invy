@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:editor="using:Invy.Client.Core.Editor"
+             xmlns:conv="using:Invy.Client.UI.Converters"
+             xmlns:sys="using:System"
+             x:Class="Invy.Client.UI.Controls.IconPickerPanel"
+             x:DataType="editor:ILookEditor">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.caption">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Opacity" Value="0.85" />
+    </Style>
+    <Style Selector="Button.pick">
+      <Setter Property="Width" Value="38" />
+      <Setter Property="Height" Value="38" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,4,4" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Theme" Value="{DynamicResource TransparentButton}" />
+    </Style>
+    <Style Selector="Button.swatch">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Margin" Value="0,0,6,6" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Иконка (эмодзи или символ) и цвет; «Как у типа» / «По умолчанию» — сбросить -->
+  <StackPanel Width="392" Spacing="8">
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Text="Иконка и цвет" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <Button Grid.Column="1" Content="Сбросить" Command="{Binding ResetLookCommand}" IsEnabled="{Binding HasOwnLook}" />
+    </Grid>
+    <TextBlock Classes="caption" Text="Эмодзи" />
+    <ScrollViewer MaxHeight="164">
+      <ItemsControl ItemsSource="{x:Static editor:IconChoices.Emojis}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="sys:String">
+            <Button Classes="pick" Content="{Binding}" FontSize="18"
+                    Command="{Binding $parent[ItemsControl].((editor:ILookEditor)DataContext).SetEmojiCommand}"
+                    CommandParameter="{Binding}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <TextBlock Classes="caption" Text="Символы" />
+    <ItemsControl ItemsSource="{x:Static editor:IconChoices.Symbols}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="sys:String">
+          <Button Classes="pick" ToolTip.Tip="{Binding}"
+                  Command="{Binding $parent[ItemsControl].((editor:ILookEditor)DataContext).SetSymbolCommand}"
+                  CommandParameter="{Binding}">
+            <ui:FASymbolIcon Symbol="{Binding Converter={x:Static conv:FluentSymbolConverter.Instance}}" FontSize="18" />
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+    <TextBlock Classes="caption" Text="Цвет" />
+    <ItemsControl ItemsSource="{x:Static editor:IconChoices.Colors}">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <WrapPanel />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="sys:String">
+          <Button Classes="swatch" Background="{Binding Converter={x:Static conv:ColorConverters.Brush}}" ToolTip.Tip="{Binding}"
+                  Command="{Binding $parent[ItemsControl].((editor:ILookEditor)DataContext).SetColorCommand}"
+                  CommandParameter="{Binding}" />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>
