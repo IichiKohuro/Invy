@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Invy.Api\Invy.Api.csproj" />
+    <ProjectReference Include="..\..\src\Invy.Client.Core\Invy.Client.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

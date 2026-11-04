@@ -11,9 +11,11 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Invy.Client.Tests" />
+    <InternalsVisibleTo Include="Invy.Api.Tests" />
   </ItemGroup>
 </Project>
